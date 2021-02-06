@@ -6,16 +6,11 @@ import (
 
 	"github.com/alphauslabs/blue-sdk-go/session"
 	"github.com/alphauslabs/bluectl/logger"
+	"github.com/alphauslabs/bluectl/params"
 	"github.com/spf13/cobra"
 )
 
 func AccessTokenCmd() *cobra.Command {
-	var (
-		target       string
-		clientId     string
-		clientSecret string
-	)
-
 	c := &cobra.Command{
 		Use:   "access-token",
 		Short: "Get access token for (Ripple/Wave)",
@@ -33,14 +28,14 @@ environment variables:
 			}(&ret)
 
 			loginUrl := session.LoginUrlRipple
-			if target == "wave" {
+			if params.Target == "wave" {
 				loginUrl = session.LoginUrlWave
 			}
 
 			s := session.New(
 				session.WithLoginUrl(loginUrl),
-				session.WithClientId(clientId),
-				session.WithClientSecret(clientSecret),
+				session.WithClientId(params.ClientId),
+				session.WithClientSecret(params.ClientSecret),
 			)
 
 			token, err := s.AccessToken()
@@ -55,8 +50,5 @@ environment variables:
 	}
 
 	c.Flags().SortFlags = false
-	c.Flags().StringVar(&target, "target", "ripple", "target for login: ripple, wave")
-	c.Flags().StringVar(&clientId, "client-id", os.Getenv("ALPHAUS_CLIENT_ID"), "your Alphaus client id")
-	c.Flags().StringVar(&clientSecret, "client-secret", os.Getenv("ALPHAUS_CLIENT_SECRET"), "your Alphaus client secret")
 	return c
 }
