@@ -16,3 +16,5 @@ ALPHAUS_CLIENT_SECRET
 ```
 
 You can also use the `--client-id` and `--client-secret` flags to set the values explicitly.
+
+Run `bluectl -h` or `bluectl <subcommand> -h` to explore the available subcommands and flags.
