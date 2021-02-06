@@ -14,3 +14,5 @@ By default, this tool will look for the following environment variables for auth
 ALPHAUS_CLIENT_ID
 ALPHAUS_CLIENT_SECRET
 ```
+
+You can also use the `--client-id` and `--client-secret` flags to set the values explicitly.
