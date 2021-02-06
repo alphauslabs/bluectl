@@ -17,7 +17,7 @@ changelog:
     - '^test:'
 release:
   github:
-    owner: mobingi
+    owner: alphauslabs
     name: bluectl
 brews:
 - tap:
