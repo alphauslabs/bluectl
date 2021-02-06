@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/alphauslabs/bluectl/cmds"
-	"github.com/mobingi/gosdk/pkg/util/simplelog"
+	"github.com/alphauslabs/bluectl/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ var (
 		Short: "Command line interface for Alphaus Blue platform",
 		Long:  `Command line interface for Alphaus Blue platform.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			simplelog.Error("invalid cmd, please run -h")
+			logger.Error("invalid cmd, please run -h")
 		},
 	}
 )
