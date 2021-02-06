@@ -1,0 +1,33 @@
+builds:
+- id: "bluectl"
+  binary: bluectl
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+checksum:
+  name_template: 'checksums.txt'
+dist: /tmp/bluectl/dist
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+release:
+  github:
+    owner: mobingi
+    name: bluectl
+brews:
+- tap:
+    owner: mobingi
+    name: homebrew-tap
+  name: bluectl
+  homepage: "https://github.com/alphauslabs/bluectl"
+  description: "The official command line interface for Alphaus services."
+  folder: Formula
+  install: |
+    bin.install "bluectl"
+  test: |
+    assert_match /Command line interface for Alphaus/, shell_output("#{bin}/bluectl -h", 0)
