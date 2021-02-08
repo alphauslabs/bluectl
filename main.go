@@ -30,6 +30,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&params.OutFile, "out", params.OutFile, "output file, if the command supports writing to file")
 	rootCmd.PersistentFlags().StringVar(&params.OutFmt, "out-fmt", params.OutFmt, "output format: json, csv, valid if --out is set")
 	rootCmd.AddCommand(
+		cmds.MeCmd(),
 		cmds.AccessTokenCmd(),
 	)
 }
