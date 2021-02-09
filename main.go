@@ -33,6 +33,7 @@ func init() {
 		cmds.MeCmd(),
 		cmds.AccessTokenCmd(),
 		cmds.AwsCostCmd(),
+		cmds.AwsFeesCmd(),
 	)
 }
 
