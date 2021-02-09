@@ -79,6 +79,8 @@ If 'billinggroup', it should be a billing group id.`,
 				case "csv":
 					wf.Write([]string{
 						"name",
+						"companyId",
+						"billingGroupId",
 						"account",
 						"date",
 						"productCode",
@@ -108,6 +110,8 @@ If 'billinggroup', it should be a billing group id.`,
 					case "csv":
 						wf.Write([]string{
 							name,
+							v.CompanyId,
+							v.BillingGroupId,
 							v.Account,
 							v.Date.AsTime().Format(time.RFC3339),
 							v.ProductCode,
