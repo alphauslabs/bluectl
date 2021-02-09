@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/alphauslabs/blue-sdk-go/blueaws/v1"
+	"github.com/alphauslabs/blue-sdk-go/blue/v1"
 	"github.com/alphauslabs/blue-sdk-go/session"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/logger"
@@ -40,8 +40,8 @@ func MeCmd() *cobra.Command {
 			}
 
 			defer conn.Close()
-			client := blueaws.NewBlueAwsClient(conn)
-			resp, err := client.Me(context.Background(), &blueaws.MeRequest{})
+			client := blue.NewBlueClient(conn)
+			resp, err := client.Me(context.Background(), &blue.MeRequest{})
 			if err != nil {
 				log.Fatalln("Me failed:", err)
 			}
