@@ -34,7 +34,7 @@ func MeCmd() *cobra.Command {
 				}),
 			))
 
-			conn, err := grpc.DialContext(context.Background(), session.BlueAwsEndpoint, opts...)
+			conn, err := grpc.DialContext(context.Background(), session.BlueEndpoint, opts...)
 			if err != nil {
 				log.Fatalln("DialContext failed:", err)
 			}
