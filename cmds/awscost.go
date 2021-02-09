@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"time"
 
@@ -58,6 +57,7 @@ If 'billinggroup', it should be a billing group id.`,
 			defer client.Close()
 			var f *os.File
 			var wf *csv.Writer
+
 			if params.OutFile != "" {
 				f, err = os.Create(params.OutFile)
 				if err != nil {
@@ -74,6 +74,7 @@ If 'billinggroup', it should be a billing group id.`,
 				switch params.OutFmt {
 				case "csv":
 					wf.Write([]string{
+						"name",
 						"account",
 						"date",
 						"productCode",
@@ -95,8 +96,59 @@ If 'billinggroup', it should be a billing group id.`,
 				}
 			}
 
+			fnWriteFile := func(name string, v *awscost.Cost) {
+				if params.OutFile != "" {
+					switch params.OutFmt {
+					case "csv":
+						wf.Write([]string{
+							name,
+							v.Account,
+							v.Date.AsTime().Format(time.RFC3339),
+							v.ProductCode,
+							v.ServiceCode,
+							v.Region,
+							v.Zone,
+							v.UsageType,
+							v.InstanceType,
+							v.Operation,
+							v.InvoiceId,
+							v.Description,
+							fmt.Sprintf("%.9f", v.UsageAmount),
+							fmt.Sprintf("%.9f", v.Cost),
+						})
+					case "json":
+						b, _ := json.Marshal(v)
+						fmt.Fprintf(f, "%v\n", string(b))
+					}
+				}
+			}
+
 			switch typ {
 			case "all":
+				stream, err := client.StreamReadCosts(ctx,
+					&awscost.StreamReadCostsRequest{
+						Name: args[0],
+					},
+				)
+
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				for {
+					v, err := stream.Recv()
+					if err == io.EOF {
+						break
+					}
+
+					if err != nil {
+						fnerr(err)
+						return
+					}
+
+					fnWriteFile(args[0], v)
+				}
 			case "account":
 				stream, err := client.StreamReadAccountCosts(ctx,
 					&awscost.StreamReadAccountCostsRequest{
@@ -120,34 +172,58 @@ If 'billinggroup', it should be a billing group id.`,
 						return
 					}
 
-					b, _ := json.Marshal(v)
-					log.Println(string(b))
-
-					if params.OutFile != "" {
-						switch params.OutFmt {
-						case "csv":
-							wf.Write([]string{
-								v.Account,
-								v.Date.AsTime().Format(time.RFC3339),
-								v.ProductCode,
-								v.ServiceCode,
-								v.Region,
-								v.Zone,
-								v.UsageType,
-								v.InstanceType,
-								v.Operation,
-								v.InvoiceId,
-								v.Description,
-								fmt.Sprintf("%.9f", v.UsageAmount),
-								fmt.Sprintf("%.9f", v.Cost),
-							})
-						case "json":
-							fmt.Fprintf(f, "%v\n", string(b))
-						}
-					}
+					fnWriteFile(args[0], v)
 				}
 			case "company":
+				stream, err := client.StreamReadCompanyCosts(ctx,
+					&awscost.StreamReadCompanyCostsRequest{
+						Name: args[0],
+					},
+				)
+
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				for {
+					v, err := stream.Recv()
+					if err == io.EOF {
+						break
+					}
+
+					if err != nil {
+						fnerr(err)
+						return
+					}
+
+					fnWriteFile(args[0], v)
+				}
 			case "billinggroup":
+				stream, err := client.StreamReadBillingGroupCosts(ctx,
+					&awscost.StreamReadBillingGroupCostsRequest{
+						Name: args[0],
+					},
+				)
+
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				for {
+					v, err := stream.Recv()
+					if err == io.EOF {
+						break
+					}
+
+					if err != nil {
+						fnerr(err)
+						return
+					}
+
+					fnWriteFile(args[0], v)
+				}
 			default:
 				fnerr(fmt.Errorf("type unsupported: %v", typ))
 				return
