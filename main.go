@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/alphauslabs/bluectl/cmds"
-	"github.com/alphauslabs/bluectl/logger"
 	"github.com/alphauslabs/bluectl/params"
+	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -32,6 +32,7 @@ func init() {
 	rootCmd.AddCommand(
 		cmds.MeCmd(),
 		cmds.AccessTokenCmd(),
+		cmds.AwsCostCmd(),
 	)
 }
 

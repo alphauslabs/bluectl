@@ -5,12 +5,12 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"log"
-	"os"
 
 	"github.com/alphauslabs/blue-sdk-go/blueaws/v1"
 	"github.com/alphauslabs/blue-sdk-go/session"
-	"github.com/alphauslabs/bluectl/logger"
 	"github.com/alphauslabs/bluectl/params"
+	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/bluectl/pkg/loginurl"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -22,25 +22,13 @@ func MeCmd() *cobra.Command {
 		Short: "Get information of me as a user",
 		Long:  `Get information of me as a user.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			var ret int
-			defer func(r *int) {
-				if *r != 0 {
-					os.Exit(*r)
-				}
-			}(&ret)
-
-			loginUrl := session.LoginUrlRipple
-			if params.Target == "wave" {
-				loginUrl = session.LoginUrlWave
-			}
-
 			var opts []grpc.DialOption
 			creds := credentials.NewTLS(&tls.Config{})
 			opts = append(opts, grpc.WithTransportCredentials(creds))
 			opts = append(opts, grpc.WithBlock())
 			opts = append(opts, grpc.WithPerRPCCredentials(
 				session.NewRpcCredentials(session.RpcCredentialsInput{
-					LoginUrl:     loginUrl,
+					LoginUrl:     loginurl.LoginUrl(),
 					ClientId:     params.ClientId,
 					ClientSecret: params.ClientSecret,
 				}),

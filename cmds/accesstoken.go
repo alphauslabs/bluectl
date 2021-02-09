@@ -2,11 +2,11 @@ package cmds
 
 import (
 	"fmt"
-	"os"
+	"log"
 
 	"github.com/alphauslabs/blue-sdk-go/session"
-	"github.com/alphauslabs/bluectl/logger"
 	"github.com/alphauslabs/bluectl/params"
+	"github.com/alphauslabs/bluectl/pkg/loginurl"
 	"github.com/spf13/cobra"
 )
 
@@ -20,29 +20,15 @@ environment variables:
   ALPHAUS_CLIENT_ID
   ALPHAUS_CLIENT_SECRET`,
 		Run: func(cmd *cobra.Command, args []string) {
-			var ret int
-			defer func(r *int) {
-				if *r != 0 {
-					os.Exit(*r)
-				}
-			}(&ret)
-
-			loginUrl := session.LoginUrlRipple
-			if params.Target == "wave" {
-				loginUrl = session.LoginUrlWave
-			}
-
 			s := session.New(
-				session.WithLoginUrl(loginUrl),
+				session.WithLoginUrl(loginurl.LoginUrl()),
 				session.WithClientId(params.ClientId),
 				session.WithClientSecret(params.ClientSecret),
 			)
 
 			token, err := s.AccessToken()
 			if err != nil {
-				logger.Error(err)
-				ret = 1
-				return
+				log.Fatalln(err)
 			}
 
 			fmt.Print(token)
