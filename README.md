@@ -8,7 +8,7 @@ To install using [brew](https://brew.sh/), run the following command:
 $ brew install mobingi/tap/bluectl
 ```
 
-By default, this tool will look for the following environment variables for authentication:
+By default, this tool will look for the following environment variables for [authentication](https://alphauslabs.github.io/blueapi/authentication/apikey.html):
 
 ```bash
 ALPHAUS_CLIENT_ID
