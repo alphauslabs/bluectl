@@ -97,6 +97,8 @@ If 'billinggroup', it should be a billing group id.`,
 			}
 
 			fnWriteFile := func(name string, v *awscost.Cost) {
+				b, _ := json.Marshal(v)
+				logger.Info(string(b))
 				if params.OutFile != "" {
 					switch params.OutFmt {
 					case "csv":
@@ -117,7 +119,6 @@ If 'billinggroup', it should be a billing group id.`,
 							fmt.Sprintf("%.9f", v.Cost),
 						})
 					case "json":
-						b, _ := json.Marshal(v)
 						fmt.Fprintf(f, "%v\n", string(b))
 					}
 				}
@@ -126,9 +127,7 @@ If 'billinggroup', it should be a billing group id.`,
 			switch typ {
 			case "all":
 				stream, err := client.StreamReadCosts(ctx,
-					&awscost.StreamReadCostsRequest{
-						Name: args[0],
-					},
+					&awscost.StreamReadCostsRequest{},
 				)
 
 				if err != nil {
@@ -147,7 +146,7 @@ If 'billinggroup', it should be a billing group id.`,
 						return
 					}
 
-					fnWriteFile(args[0], v)
+					fnWriteFile("all", v)
 				}
 			case "account":
 				stream, err := client.StreamReadAccountCosts(ctx,
