@@ -2,6 +2,8 @@ package cmds
 
 import (
 	"context"
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -9,6 +11,7 @@ import (
 	"time"
 
 	"github.com/alphauslabs/blue-sdk-go/awscost/v1"
+	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/alphauslabs/bluectl/pkg/loginurl"
 	"github.com/spf13/cobra"
@@ -53,6 +56,45 @@ If 'billinggroup', it should be a billing group id.`,
 			}
 
 			defer client.Close()
+			var f *os.File
+			var wf *csv.Writer
+			if params.OutFile != "" {
+				f, err = os.Create(params.OutFile)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				wf = csv.NewWriter(f)
+				defer func() {
+					wf.Flush()
+					f.Close()
+				}()
+
+				switch params.OutFmt {
+				case "csv":
+					wf.Write([]string{
+						"account",
+						"date",
+						"productCode",
+						"serviceCode",
+						"region",
+						"zone",
+						"usageType",
+						"instanceType",
+						"operation",
+						"invoiceId",
+						"description",
+						"usageAmount",
+						"cost",
+					})
+				case "json":
+				default:
+					fnerr(fmt.Errorf("unsupported output format"))
+					return
+				}
+			}
+
 			switch typ {
 			case "all":
 			case "account":
@@ -78,13 +120,41 @@ If 'billinggroup', it should be a billing group id.`,
 						return
 					}
 
-					log.Println(v.Date.AsTime().Format(time.RFC3339), v, err)
+					b, _ := json.Marshal(v)
+					log.Println(string(b))
+
+					if params.OutFile != "" {
+						switch params.OutFmt {
+						case "csv":
+							wf.Write([]string{
+								v.Account,
+								v.Date.AsTime().Format(time.RFC3339),
+								v.ProductCode,
+								v.ServiceCode,
+								v.Region,
+								v.Zone,
+								v.UsageType,
+								v.InstanceType,
+								v.Operation,
+								v.InvoiceId,
+								v.Description,
+								fmt.Sprintf("%.9f", v.UsageAmount),
+								fmt.Sprintf("%.9f", v.Cost),
+							})
+						case "json":
+							fmt.Fprintf(f, "%v\n", string(b))
+						}
+					}
 				}
 			case "company":
 			case "billinggroup":
 			default:
 				fnerr(fmt.Errorf("type unsupported: %v", typ))
 				return
+			}
+
+			if params.OutFile != "" {
+				logger.Infof("data written to %v in %v format", params.OutFile, params.OutFmt)
 			}
 		},
 	}

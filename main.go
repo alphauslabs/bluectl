@@ -28,7 +28,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&params.ClientId, "client-id", os.Getenv("ALPHAUS_CLIENT_ID"), "your Alphaus client id")
 	rootCmd.PersistentFlags().StringVar(&params.ClientSecret, "client-secret", os.Getenv("ALPHAUS_CLIENT_SECRET"), "your Alphaus client secret")
 	rootCmd.PersistentFlags().StringVar(&params.OutFile, "out", params.OutFile, "output file, if the command supports writing to file")
-	rootCmd.PersistentFlags().StringVar(&params.OutFmt, "out-fmt", params.OutFmt, "output format: json, csv, valid if --out is set")
+	rootCmd.PersistentFlags().StringVar(&params.OutFmt, "outfmt", "csv", "output format: json, csv, valid if --out is set")
 	rootCmd.AddCommand(
 		cmds.MeCmd(),
 		cmds.AccessTokenCmd(),
