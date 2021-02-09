@@ -13,12 +13,16 @@ import (
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/alphauslabs/bluectl/pkg/loginurl"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func AwsCostCmd() *cobra.Command {
 	var (
-		typ string
+		start string
+		end   string
+		typ   string
 	)
 
 	c := &cobra.Command{
@@ -98,7 +102,7 @@ If 'billinggroup', it should be a billing group id.`,
 
 			fnWriteFile := func(name string, v *awscost.Cost) {
 				b, _ := json.Marshal(v)
-				logger.Info(string(b))
+				fmt.Println(string(b))
 				if params.OutFile != "" {
 					switch params.OutFmt {
 					case "csv":
@@ -124,10 +128,34 @@ If 'billinggroup', it should be a billing group id.`,
 				}
 			}
 
+			var tstart, tend *timestamp.Timestamp
+			if start != "" {
+				t, err := time.Parse("2006-01-02", start)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				tstart = timestamppb.New(t)
+			}
+
+			if end != "" {
+				t, err := time.Parse("2006-01-02", end)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				tend = timestamppb.New(t)
+			}
+
 			switch typ {
 			case "all":
 				stream, err := client.StreamReadCosts(ctx,
-					&awscost.StreamReadCostsRequest{},
+					&awscost.StreamReadCostsRequest{
+						StartTime: tstart,
+						EndTime:   tend,
+					},
 				)
 
 				if err != nil {
@@ -151,7 +179,9 @@ If 'billinggroup', it should be a billing group id.`,
 			case "account":
 				stream, err := client.StreamReadAccountCosts(ctx,
 					&awscost.StreamReadAccountCostsRequest{
-						Name: args[0],
+						Name:      args[0],
+						StartTime: tstart,
+						EndTime:   tend,
 					},
 				)
 
@@ -176,7 +206,9 @@ If 'billinggroup', it should be a billing group id.`,
 			case "company":
 				stream, err := client.StreamReadCompanyCosts(ctx,
 					&awscost.StreamReadCompanyCostsRequest{
-						Name: args[0],
+						Name:      args[0],
+						StartTime: tstart,
+						EndTime:   tend,
 					},
 				)
 
@@ -201,7 +233,9 @@ If 'billinggroup', it should be a billing group id.`,
 			case "billinggroup":
 				stream, err := client.StreamReadBillingGroupCosts(ctx,
 					&awscost.StreamReadBillingGroupCostsRequest{
-						Name: args[0],
+						Name:      args[0],
+						StartTime: tstart,
+						EndTime:   tend,
 					},
 				)
 
@@ -236,5 +270,7 @@ If 'billinggroup', it should be a billing group id.`,
 
 	c.Flags().SortFlags = false
 	c.Flags().StringVar(&typ, "type", "account", "type of cost to stream: all, account, company, billinggroup")
+	c.Flags().StringVar(&start, "start", start, "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
+	c.Flags().StringVar(&end, "end", end, "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
 	return c
 }
