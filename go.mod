@@ -3,7 +3,7 @@ module github.com/alphauslabs/bluectl
 go 1.15
 
 require (
-	github.com/alphauslabs/blue-sdk-go v0.5.0
+	github.com/alphauslabs/blue-sdk-go v0.5.5
 	github.com/fatih/color v1.10.0
 	github.com/golang/protobuf v1.4.3
 	github.com/spf13/cobra v1.1.1

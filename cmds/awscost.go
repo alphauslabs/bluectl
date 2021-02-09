@@ -20,9 +20,11 @@ import (
 
 func AwsCostCmd() *cobra.Command {
 	var (
-		start string
-		end   string
-		typ   string
+		typ                   string
+		start                 string
+		end                   string
+		includeTags           bool
+		includeCostCategories bool
 	)
 
 	c := &cobra.Command{
@@ -92,6 +94,8 @@ If 'billinggroup', it should be a billing group id.`,
 						"operation",
 						"invoiceId",
 						"description",
+						"tags",
+						"costCategories",
 						"usageAmount",
 						"cost",
 					})
@@ -106,6 +110,17 @@ If 'billinggroup', it should be a billing group id.`,
 				b, _ := json.Marshal(v)
 				fmt.Println(string(b))
 				if params.OutFile != "" {
+					var tags, cc string
+					if v.Tags != nil {
+						b, _ := json.Marshal(v.Tags)
+						tags = string(b)
+					}
+
+					if v.CostCategories != nil {
+						b, _ := json.Marshal(v.CostCategories)
+						cc = string(b)
+					}
+
 					switch params.OutFmt {
 					case "csv":
 						wf.Write([]string{
@@ -123,6 +138,8 @@ If 'billinggroup', it should be a billing group id.`,
 							v.Operation,
 							v.InvoiceId,
 							v.Description,
+							tags,
+							cc,
 							fmt.Sprintf("%.9f", v.UsageAmount),
 							fmt.Sprintf("%.9f", v.Cost),
 						})
@@ -157,8 +174,10 @@ If 'billinggroup', it should be a billing group id.`,
 			case "all":
 				stream, err := client.StreamReadCosts(ctx,
 					&awscost.StreamReadCostsRequest{
-						StartTime: tstart,
-						EndTime:   tend,
+						StartTime:             tstart,
+						EndTime:               tend,
+						IncludeTags:           includeTags,
+						IncludeCostCategories: includeCostCategories,
 					},
 				)
 
@@ -183,9 +202,11 @@ If 'billinggroup', it should be a billing group id.`,
 			case "account":
 				stream, err := client.StreamReadAccountCosts(ctx,
 					&awscost.StreamReadAccountCostsRequest{
-						Name:      args[0],
-						StartTime: tstart,
-						EndTime:   tend,
+						Name:                  args[0],
+						StartTime:             tstart,
+						EndTime:               tend,
+						IncludeTags:           includeTags,
+						IncludeCostCategories: includeCostCategories,
 					},
 				)
 
@@ -210,9 +231,11 @@ If 'billinggroup', it should be a billing group id.`,
 			case "company":
 				stream, err := client.StreamReadCompanyCosts(ctx,
 					&awscost.StreamReadCompanyCostsRequest{
-						Name:      args[0],
-						StartTime: tstart,
-						EndTime:   tend,
+						Name:                  args[0],
+						StartTime:             tstart,
+						EndTime:               tend,
+						IncludeTags:           includeTags,
+						IncludeCostCategories: includeCostCategories,
 					},
 				)
 
@@ -237,9 +260,11 @@ If 'billinggroup', it should be a billing group id.`,
 			case "billinggroup":
 				stream, err := client.StreamReadBillingGroupCosts(ctx,
 					&awscost.StreamReadBillingGroupCostsRequest{
-						Name:      args[0],
-						StartTime: tstart,
-						EndTime:   tend,
+						Name:                  args[0],
+						StartTime:             tstart,
+						EndTime:               tend,
+						IncludeTags:           includeTags,
+						IncludeCostCategories: includeCostCategories,
 					},
 				)
 
@@ -276,5 +301,7 @@ If 'billinggroup', it should be a billing group id.`,
 	c.Flags().StringVar(&typ, "type", "account", "type of cost to stream: all, account, company, billinggroup")
 	c.Flags().StringVar(&start, "start", start, "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
 	c.Flags().StringVar(&end, "end", end, "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
+	c.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
+	c.Flags().BoolVar(&includeCostCategories, "include-costcategories", includeCostCategories, "if true, include cost categories in the stream")
 	return c
 }
