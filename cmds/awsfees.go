@@ -52,7 +52,13 @@ If 'billinggroup', it should be a billing group id.`,
 			}
 
 			ctx := context.Background()
-			client, err := awscost.NewClient(ctx, awscost.WithLoginUrl(loginurl.LoginUrl()))
+			client, err := awscost.NewClient(
+				ctx,
+				awscost.WithLoginUrl(loginurl.LoginUrl()),
+				awscost.WithClientId(params.ClientId),
+				awscost.WithClientSecret(params.ClientSecret),
+			)
+
 			if err != nil {
 				fnerr(err)
 				return
