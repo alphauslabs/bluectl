@@ -24,10 +24,10 @@ var (
 func init() {
 	rootCmd.Flags().SortFlags = false
 	rootCmd.PersistentFlags().SortFlags = false
-	rootCmd.PersistentFlags().StringVar(&params.RippleClientId, "ripple-client-id", os.Getenv("ALPHAUS_RIPPLE_CLIENT_ID"), "your Ripple client id")
-	rootCmd.PersistentFlags().StringVar(&params.RippleClientSecret, "ripple-client-secret", os.Getenv("ALPHAUS_RIPPLE_CLIENT_SECRET"), "your Ripple client secret")
-	rootCmd.PersistentFlags().StringVar(&params.WaveClientId, "wave-client-id", os.Getenv("ALPHAUS_WAVE_CLIENT_ID"), "your Wave client id")
-	rootCmd.PersistentFlags().StringVar(&params.WaveClientSecret, "wave-client-secret", os.Getenv("ALPHAUS_WAVE_CLIENT_SECRET"), "your Wave client secret")
+	rootCmd.PersistentFlags().StringVar(&params.RippleClientId, "ripple-client-id", os.Getenv("ALPHAUS_RIPPLE_CLIENT_ID"), "your Ripple client id, defaults to $ALPHAUS_RIPPLE_CLIENT_ID")
+	rootCmd.PersistentFlags().StringVar(&params.RippleClientSecret, "ripple-client-secret", os.Getenv("ALPHAUS_RIPPLE_CLIENT_SECRET"), "your Ripple client secret, defaults to $ALPHAUS_RIPPLE_CLIENT_SECRET")
+	rootCmd.PersistentFlags().StringVar(&params.WaveClientId, "wave-client-id", os.Getenv("ALPHAUS_WAVE_CLIENT_ID"), "your Wave client id, defaults to $ALPHAUS_WAVE_CLIENT_ID")
+	rootCmd.PersistentFlags().StringVar(&params.WaveClientSecret, "wave-client-secret", os.Getenv("ALPHAUS_WAVE_CLIENT_SECRET"), "your Wave client secret, defaults to $ALPHAUS_WAVE_CLIENT_SECRET")
 	rootCmd.PersistentFlags().StringVar(&params.OutFile, "out", params.OutFile, "output file, if the command supports writing to file")
 	rootCmd.PersistentFlags().StringVar(&params.OutFmt, "outfmt", "csv", "output format: json, csv, valid if --out is set")
 	rootCmd.AddCommand(
