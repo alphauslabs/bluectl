@@ -12,3 +12,11 @@ func LoginUrl() string {
 
 	return session.LoginUrlRipple
 }
+
+func LoginUrlBeta() string {
+	if params.Target == "wave" {
+		return session.LoginUrlWaveNext
+	}
+
+	return session.LoginUrlRippleNext
+}

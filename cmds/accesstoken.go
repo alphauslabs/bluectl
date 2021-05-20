@@ -11,6 +11,10 @@ import (
 )
 
 func AccessTokenCmd() *cobra.Command {
+	var (
+		beta bool
+	)
+
 	c := &cobra.Command{
 		Use:   "access-token",
 		Short: "Get access token for (Ripple/Wave)",
@@ -26,6 +30,14 @@ environment variables:
 				session.WithClientSecret(params.ClientSecret),
 			)
 
+			if beta {
+				s = session.New(
+					session.WithLoginUrl(loginurl.LoginUrlBeta()),
+					session.WithClientId(params.ClientId),
+					session.WithClientSecret(params.ClientSecret),
+				)
+			}
+
 			token, err := s.AccessToken()
 			if err != nil {
 				log.Fatalln(err)
@@ -36,5 +48,6 @@ environment variables:
 	}
 
 	c.Flags().SortFlags = false
+	c.Flags().BoolVar(&beta, "beta", beta, "if true, access beta version (next)")
 	return c
 }
