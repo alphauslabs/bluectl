@@ -23,5 +23,6 @@ func RippleCmd() *cobra.Command {
 		ripple.RippleTestCmd(),
 	)
 
+	cmd.Flags().SortFlags = false
 	return cmd
 }

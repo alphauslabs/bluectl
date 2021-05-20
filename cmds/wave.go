@@ -23,5 +23,6 @@ func WaveCmd() *cobra.Command {
 		wave.WaveTestCmd(),
 	)
 
+	cmd.Flags().SortFlags = false
 	return cmd
 }
