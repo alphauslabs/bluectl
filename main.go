@@ -32,6 +32,8 @@ func init() {
 	rootCmd.AddCommand(
 		cmds.MeCmd(),
 		cmds.AccessTokenCmd(),
+		cmds.RippleCmd(),
+		cmds.WaveCmd(),
 		cmds.AwsCostCmd(),
 		cmds.AwsFeesCmd(),
 	)
