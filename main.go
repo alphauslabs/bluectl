@@ -24,18 +24,15 @@ var (
 func init() {
 	rootCmd.Flags().SortFlags = false
 	rootCmd.PersistentFlags().SortFlags = false
-	rootCmd.PersistentFlags().StringVar(&params.Target, "target", "ripple", "target for login: ripple, wave")
-	rootCmd.PersistentFlags().StringVar(&params.ClientId, "client-id", os.Getenv("ALPHAUS_CLIENT_ID"), "your Alphaus client id")
-	rootCmd.PersistentFlags().StringVar(&params.ClientSecret, "client-secret", os.Getenv("ALPHAUS_CLIENT_SECRET"), "your Alphaus client secret")
+	rootCmd.PersistentFlags().StringVar(&params.RippleClientId, "ripple-client-id", os.Getenv("ALPHAUS_RIPPLE_CLIENT_ID"), "your Ripple client id")
+	rootCmd.PersistentFlags().StringVar(&params.RippleClientSecret, "ripple-client-secret", os.Getenv("ALPHAUS_RIPPLE_CLIENT_SECRET"), "your Ripple client secret")
+	rootCmd.PersistentFlags().StringVar(&params.WaveClientId, "wave-client-id", os.Getenv("ALPHAUS_WAVE_CLIENT_ID"), "your Wave client id")
+	rootCmd.PersistentFlags().StringVar(&params.WaveClientSecret, "wave-client-secret", os.Getenv("ALPHAUS_WAVE_CLIENT_SECRET"), "your Wave client secret")
 	rootCmd.PersistentFlags().StringVar(&params.OutFile, "out", params.OutFile, "output file, if the command supports writing to file")
 	rootCmd.PersistentFlags().StringVar(&params.OutFmt, "outfmt", "csv", "output format: json, csv, valid if --out is set")
 	rootCmd.AddCommand(
-		cmds.MeCmd(),
-		cmds.AccessTokenCmd(),
 		cmds.RippleCmd(),
 		cmds.WaveCmd(),
-		cmds.AwsCostCmd(),
-		cmds.AwsFeesCmd(),
 	)
 }
 

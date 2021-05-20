@@ -1,4 +1,4 @@
-package cmds
+package ripple
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"github.com/alphauslabs/blue-sdk-go/awscost/v1"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/logger"
-	"github.com/alphauslabs/bluectl/pkg/loginurl"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -56,9 +55,9 @@ If 'billinggroup', it should be a billing group id.`,
 			ctx := context.Background()
 			client, err := awscost.NewClient(
 				ctx,
-				awscost.WithLoginUrl(loginurl.LoginUrl()),
-				awscost.WithClientId(params.ClientId),
-				awscost.WithClientSecret(params.ClientSecret),
+				awscost.WithLoginUrl(cmd.Parent().Annotations["loginurl"]),
+				awscost.WithClientId(cmd.Parent().Annotations["clientid"]),
+				awscost.WithClientSecret(cmd.Parent().Annotations["clientsecret"]),
 			)
 
 			defer client.Close()

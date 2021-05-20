@@ -1,12 +1,10 @@
-package cmds
+package ripple
 
 import (
 	"fmt"
 	"log"
 
 	"github.com/alphauslabs/blue-sdk-go/session"
-	"github.com/alphauslabs/bluectl/params"
-	"github.com/alphauslabs/bluectl/pkg/loginurl"
 	"github.com/spf13/cobra"
 )
 
@@ -17,26 +15,26 @@ func AccessTokenCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "access-token",
-		Short: "Get access token for (Ripple/Wave)",
-		Long: `Get access token for (Ripple/Wave). By default, it will look for the following
+		Short: "Get access token for Ripple",
+		Long: `Get access token for Ripple. By default, it will look for the following
 environment variables:
 
-  ALPHAUS_CLIENT_ID
-  ALPHAUS_CLIENT_SECRET`,
+  ALPHAUS_RIPPLE_CLIENT_ID
+  ALPHAUS_RIPPLE_CLIENT_SECRET`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var s *session.Session
 			switch {
 			case beta:
 				s = session.New(
-					session.WithLoginUrl(loginurl.LoginUrlBeta()),
-					session.WithClientId(params.ClientId),
-					session.WithClientSecret(params.ClientSecret),
+					session.WithLoginUrl(cmd.Parent().Annotations["loginurlbeta"]),
+					session.WithClientId(cmd.Parent().Annotations["clientid"]),
+					session.WithClientSecret(cmd.Parent().Annotations["clientsecret"]),
 				)
 			default:
 				s = session.New(
-					session.WithLoginUrl(loginurl.LoginUrl()),
-					session.WithClientId(params.ClientId),
-					session.WithClientSecret(params.ClientSecret),
+					session.WithLoginUrl(cmd.Parent().Annotations["loginurl"]),
+					session.WithClientId(cmd.Parent().Annotations["clientid"]),
+					session.WithClientSecret(cmd.Parent().Annotations["clientsecret"]),
 				)
 			}
 
