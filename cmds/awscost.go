@@ -27,7 +27,7 @@ func AwsCostCmd() *cobra.Command {
 		includeCostCategories bool
 	)
 
-	c := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "awscost [id]",
 		Short: "Stream your AWS usage-based costs",
 		Long: `Stream your AWS usage-based costs based on the type. If --type is 'all', [id] is discarded.
@@ -298,11 +298,11 @@ If 'billinggroup', it should be a billing group id.`,
 		},
 	}
 
-	c.Flags().SortFlags = false
-	c.Flags().StringVar(&typ, "type", "account", "type of cost to stream: all, account, company, billinggroup")
-	c.Flags().StringVar(&start, "start", start, "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
-	c.Flags().StringVar(&end, "end", end, "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
-	c.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
-	c.Flags().BoolVar(&includeCostCategories, "include-costcategories", includeCostCategories, "if true, include cost categories in the stream")
-	return c
+	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&typ, "type", "account", "type of cost to stream: all, account, company, billinggroup")
+	cmd.Flags().StringVar(&start, "start", start, "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
+	cmd.Flags().StringVar(&end, "end", end, "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
+	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
+	cmd.Flags().BoolVar(&includeCostCategories, "include-costcategories", includeCostCategories, "if true, include cost categories in the stream")
+	return cmd
 }

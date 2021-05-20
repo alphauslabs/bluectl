@@ -17,10 +17,10 @@ import (
 )
 
 func MeCmd() *cobra.Command {
-	c := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "me",
-		Short: "Get information of me as a user",
-		Long:  `Get information of me as a user.`,
+		Short: "Get my information as a user",
+		Long:  `Get my information as a user.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var opts []grpc.DialOption
 			creds := credentials.NewTLS(&tls.Config{})
@@ -51,6 +51,6 @@ func MeCmd() *cobra.Command {
 		},
 	}
 
-	c.Flags().SortFlags = false
-	return c
+	cmd.Flags().SortFlags = false
+	return cmd
 }

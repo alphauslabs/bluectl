@@ -15,7 +15,7 @@ func AccessTokenCmd() *cobra.Command {
 		beta bool
 	)
 
-	c := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "access-token",
 		Short: "Get access token for (Ripple/Wave)",
 		Long: `Get access token for (Ripple/Wave). By default, it will look for the following
@@ -49,7 +49,7 @@ environment variables:
 		},
 	}
 
-	c.Flags().SortFlags = false
-	c.Flags().BoolVar(&beta, "beta", beta, "if true, access beta version (next)")
-	return c
+	cmd.Flags().SortFlags = false
+	cmd.Flags().BoolVar(&beta, "beta", beta, "if true, access beta version (next)")
+	return cmd
 }
