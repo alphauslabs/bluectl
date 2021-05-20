@@ -1,6 +1,8 @@
 ![main](https://github.com/alphauslabs/bluectl/workflows/main/badge.svg)
 
-`bluectl` is the official command line interface for Alphaus services (work-in-progress).
+**(work-in-progress)**
+
+`bluectl` is the official command line interface for Alphaus services.
 
 To install using [brew](https://brew.sh/), run the following command:
 
