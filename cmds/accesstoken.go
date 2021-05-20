@@ -24,15 +24,17 @@ environment variables:
   ALPHAUS_CLIENT_ID
   ALPHAUS_CLIENT_SECRET`,
 		Run: func(cmd *cobra.Command, args []string) {
-			s := session.New(
-				session.WithLoginUrl(loginurl.LoginUrl()),
-				session.WithClientId(params.ClientId),
-				session.WithClientSecret(params.ClientSecret),
-			)
-
-			if beta {
+			var s *session.Session
+			switch {
+			case beta:
 				s = session.New(
 					session.WithLoginUrl(loginurl.LoginUrlBeta()),
+					session.WithClientId(params.ClientId),
+					session.WithClientSecret(params.ClientSecret),
+				)
+			default:
+				s = session.New(
+					session.WithLoginUrl(loginurl.LoginUrl()),
 					session.WithClientId(params.ClientId),
 					session.WithClientSecret(params.ClientSecret),
 				)
