@@ -5,7 +5,8 @@
 To install using [brew](https://brew.sh/), run the following command:
 
 ```bash
-$ brew install alphauslabs/tap/bluectl
+$ brew tap alphauslabs/tap # only once
+$ brew install bluectl
 ```
 
 By default, this tool will look for the following environment variables for [authentication](https://alphauslabs.github.io/blueapi/authentication/apikey.html):
