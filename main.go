@@ -13,8 +13,8 @@ import (
 var (
 	rootCmd = &cobra.Command{
 		Use:   "bluectl",
-		Short: "Command line interface for Alphaus Blue platform",
-		Long:  `Command line interface for Alphaus Blue platform.`,
+		Short: "Command line interface for Alphaus services",
+		Long:  `Command line interface for Alphaus services.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			logger.Error("invalid cmd, please run -h")
 		},
