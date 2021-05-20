@@ -21,7 +21,7 @@ release:
     name: bluectl
 brews:
 - tap:
-    owner: mobingi
+    owner: alphauslabs
     name: homebrew-tap
   name: bluectl
   homepage: "https://github.com/alphauslabs/bluectl"
