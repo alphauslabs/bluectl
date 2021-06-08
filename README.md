@@ -11,17 +11,7 @@ $ brew tap alphauslabs/tap # only once
 $ brew install bluectl
 ```
 
-By default, this tool will look for the following environment variables for [authentication](https://alphauslabs.github.io/blueapi/authentication/apikey.html):
-
-```bash
-# For Ripple users:
-ALPHAUS_RIPPLE_CLIENT_ID
-ALPHAUS_RIPPLE_CLIENT_SECRET
-
-# For Wave users:
-ALPHAUS_WAVE_CLIENT_ID
-ALPHAUS_WAVE_CLIENT_SECRET
-```
+To setup the environment variables required for authentication, check out [blue-sdk-go](https://github.com/alphauslabs/blue-sdk-go).
 
 You can also use the `--client-id` and `--client-secret` flags to set the values explicitly.
 
