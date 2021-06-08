@@ -1,4 +1,4 @@
-package wave
+package ripple
 
 import (
 	"os"
@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func MeCmd() *cobra.Command {
+func WhoAmICmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "me",
-		Short: "Get my information as a Wave user",
-		Long:  `Get my information as a Wave user.`,
+		Use:   "whoami",
+		Short: "Get my information as a Ripple user",
+		Long:  `Get my information as a Ripple user.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			info, err := me.Me(
+			info, err := me.WhoAmI(
 				cmd.Parent().Annotations["loginurl"],
 				cmd.Parent().Annotations["clientid"],
 				cmd.Parent().Annotations["clientsecret"],

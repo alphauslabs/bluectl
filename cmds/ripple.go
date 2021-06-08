@@ -28,7 +28,7 @@ func RippleCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		ripple.MeCmd(),
+		ripple.WhoAmICmd(),
 		ripple.AccessTokenCmd(),
 		ripple.AwsCostCmd(),
 		ripple.AwsFeesCmd(),

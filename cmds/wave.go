@@ -28,7 +28,7 @@ func WaveCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		wave.MeCmd(),
+		wave.WhoAmICmd(),
 	)
 
 	cmd.Flags().SortFlags = false
