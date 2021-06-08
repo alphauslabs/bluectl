@@ -28,8 +28,8 @@ func AwsCostCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "awscost [id]",
-		Short: "Stream your AWS usage-based costs",
-		Long: `Stream your AWS usage-based costs based on the type. If --type is 'all', [id] is discarded.
+		Short: "Read AWS usage-based costs",
+		Long: `Read AWS usage-based costs based on the type. If --type is 'all', [id] is discarded.
 If 'account', it should be an AWS account id. If 'company', it should be a company id.
 If 'billinggroup', it should be a billing group id.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -297,7 +297,7 @@ If 'billinggroup', it should be a billing group id.`,
 	}
 
 	cmd.Flags().SortFlags = false
-	cmd.Flags().StringVar(&typ, "type", "account", "type of cost to stream: all, account, company, billinggroup")
+	cmd.Flags().StringVar(&typ, "type", "account", "type of cost to read: all, account, company, billinggroup")
 	cmd.Flags().StringVar(&start, "start", start, "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
 	cmd.Flags().StringVar(&end, "end", end, "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
 	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
