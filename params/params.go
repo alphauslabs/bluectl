@@ -1,10 +1,9 @@
 package params
 
 var (
-	RippleClientId     string
-	RippleClientSecret string
-	WaveClientId       string
-	WaveClientSecret   string
-	OutFile            string
-	OutFmt             string
+	AuthUrl      string
+	ClientId     string
+	ClientSecret string
+	OutFile      string
+	OutFmt       string
 )

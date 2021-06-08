@@ -1,4 +1,4 @@
-package ripple
+package cmds
 
 import (
 	"context"
@@ -17,17 +17,19 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func AwsFeesCmd() *cobra.Command {
+func AwsCostCmd() *cobra.Command {
 	var (
-		start string
-		end   string
-		typ   string
+		typ                   string
+		start                 string
+		end                   string
+		includeTags           bool
+		includeCostCategories bool
 	)
 
 	cmd := &cobra.Command{
-		Use:   "awsfees [id]",
-		Short: "Stream your AWS fee-based costs",
-		Long: `Stream your AWS fee-based costs based on the type. If --type is 'all', [id] is discarded.
+		Use:   "awscost [id]",
+		Short: "Stream your AWS usage-based costs",
+		Long: `Stream your AWS usage-based costs based on the type. If --type is 'all', [id] is discarded.
 If 'account', it should be an AWS account id. If 'company', it should be a company id.
 If 'billinggroup', it should be a billing group id.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -82,9 +84,18 @@ If 'billinggroup', it should be a billing group id.`,
 						"billingGroupId",
 						"account",
 						"date",
-						"type",
 						"productCode",
+						"serviceCode",
+						"region",
+						"zone",
+						"usageType",
+						"instanceType",
+						"operation",
+						"invoiceId",
 						"description",
+						"tags",
+						"costCategories",
+						"usageAmount",
 						"cost",
 					})
 				case "json":
@@ -94,10 +105,21 @@ If 'billinggroup', it should be a billing group id.`,
 				}
 			}
 
-			fnWriteFile := func(name string, v *awscost.Fee) {
+			fnWriteFile := func(name string, v *awscost.Cost) {
 				b, _ := json.Marshal(v)
 				fmt.Println(string(b))
 				if params.OutFile != "" {
+					var tags, cc string
+					if v.Tags != nil {
+						b, _ := json.Marshal(v.Tags)
+						tags = string(b)
+					}
+
+					if v.CostCategories != nil {
+						b, _ := json.Marshal(v.CostCategories)
+						cc = string(b)
+					}
+
 					switch params.OutFmt {
 					case "csv":
 						wf.Write([]string{
@@ -106,9 +128,18 @@ If 'billinggroup', it should be a billing group id.`,
 							v.BillingGroupId,
 							v.Account,
 							v.Date.AsTime().Format(time.RFC3339),
-							v.Type,
 							v.ProductCode,
+							v.ServiceCode,
+							v.Region,
+							v.Zone,
+							v.UsageType,
+							v.InstanceType,
+							v.Operation,
+							v.InvoiceId,
 							v.Description,
+							tags,
+							cc,
+							fmt.Sprintf("%.9f", v.UsageAmount),
 							fmt.Sprintf("%.9f", v.Cost),
 						})
 					case "json":
@@ -140,10 +171,12 @@ If 'billinggroup', it should be a billing group id.`,
 
 			switch typ {
 			case "all":
-				stream, err := client.StreamReadFees(ctx,
-					&awscost.StreamReadFeesRequest{
-						StartTime: tstart,
-						EndTime:   tend,
+				stream, err := client.StreamReadCosts(ctx,
+					&awscost.StreamReadCostsRequest{
+						StartTime:             tstart,
+						EndTime:               tend,
+						IncludeTags:           includeTags,
+						IncludeCostCategories: includeCostCategories,
 					},
 				)
 
@@ -166,11 +199,13 @@ If 'billinggroup', it should be a billing group id.`,
 					fnWriteFile("all", v)
 				}
 			case "account":
-				stream, err := client.StreamReadAccountFees(ctx,
-					&awscost.StreamReadAccountFeesRequest{
-						Name:      args[0],
-						StartTime: tstart,
-						EndTime:   tend,
+				stream, err := client.StreamReadAccountCosts(ctx,
+					&awscost.StreamReadAccountCostsRequest{
+						Name:                  args[0],
+						StartTime:             tstart,
+						EndTime:               tend,
+						IncludeTags:           includeTags,
+						IncludeCostCategories: includeCostCategories,
 					},
 				)
 
@@ -193,11 +228,13 @@ If 'billinggroup', it should be a billing group id.`,
 					fnWriteFile(args[0], v)
 				}
 			case "company":
-				stream, err := client.StreamReadCompanyFees(ctx,
-					&awscost.StreamReadCompanyFeesRequest{
-						Name:      args[0],
-						StartTime: tstart,
-						EndTime:   tend,
+				stream, err := client.StreamReadCompanyCosts(ctx,
+					&awscost.StreamReadCompanyCostsRequest{
+						Name:                  args[0],
+						StartTime:             tstart,
+						EndTime:               tend,
+						IncludeTags:           includeTags,
+						IncludeCostCategories: includeCostCategories,
 					},
 				)
 
@@ -220,11 +257,13 @@ If 'billinggroup', it should be a billing group id.`,
 					fnWriteFile(args[0], v)
 				}
 			case "billinggroup":
-				stream, err := client.StreamReadBillingGroupFees(ctx,
-					&awscost.StreamReadBillingGroupFeesRequest{
-						Name:      args[0],
-						StartTime: tstart,
-						EndTime:   tend,
+				stream, err := client.StreamReadBillingGroupCosts(ctx,
+					&awscost.StreamReadBillingGroupCostsRequest{
+						Name:                  args[0],
+						StartTime:             tstart,
+						EndTime:               tend,
+						IncludeTags:           includeTags,
+						IncludeCostCategories: includeCostCategories,
 					},
 				)
 
@@ -261,5 +300,7 @@ If 'billinggroup', it should be a billing group id.`,
 	cmd.Flags().StringVar(&typ, "type", "account", "type of cost to stream: all, account, company, billinggroup")
 	cmd.Flags().StringVar(&start, "start", start, "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
 	cmd.Flags().StringVar(&end, "end", end, "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
+	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
+	cmd.Flags().BoolVar(&includeCostCategories, "include-costcategories", includeCostCategories, "if true, include cost categories in the stream")
 	return cmd
 }

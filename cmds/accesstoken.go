@@ -1,10 +1,11 @@
-package ripple
+package cmds
 
 import (
 	"fmt"
 	"log"
 
 	"github.com/alphauslabs/blue-sdk-go/session"
+	"github.com/alphauslabs/bluectl/params"
 	"github.com/spf13/cobra"
 )
 
@@ -17,8 +18,8 @@ func AccessTokenCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "access-token",
-		Short: "Get access token for Ripple",
-		Long:  `Get access token for Ripple. See global flags for more information on the default environment variables.`,
+		Short: "Get access token for Ripple/Wave",
+		Long:  `Get access token for Ripple/Wave. See global flags for more information on the default environment variables.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var s *session.Session
 			var o []session.Option
@@ -30,14 +31,21 @@ func AccessTokenCmd() *cobra.Command {
 
 			switch {
 			case beta:
-				o = append(o, session.WithLoginUrl(cmd.Parent().Annotations["loginurlbeta"]))
+				if params.AuthUrl == "" {
+					params.AuthUrl = session.LoginUrlRippleNext
+				}
 			default:
-				o = append(o, session.WithLoginUrl(cmd.Parent().Annotations["loginurl"]))
+				if params.AuthUrl == "" {
+					params.AuthUrl = session.LoginUrlRipple
+				}
 			}
 
-			o = append(o, session.WithClientId(cmd.Parent().Annotations["clientid"]))
-			o = append(o, session.WithClientSecret(cmd.Parent().Annotations["clientsecret"]))
+			o = append(o, session.WithLoginUrl(params.AuthUrl))
+			o = append(o, session.WithClientId(params.ClientId))
+			o = append(o, session.WithClientSecret(params.ClientSecret))
 			s = session.New(o...)
+
+			// Get actual access token.
 			token, err := s.AccessToken()
 			if err != nil {
 				log.Fatalln(err)
