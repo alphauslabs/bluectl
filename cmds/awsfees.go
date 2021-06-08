@@ -26,8 +26,8 @@ func AwsFeesCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "awsfees [id]",
-		Short: "Stream your AWS fee-based costs",
-		Long: `Stream your AWS fee-based costs based on the type. If --type is 'all', [id] is discarded.
+		Short: "Read AWS fee-based costs",
+		Long: `Read AWS fee-based costs based on the type. If --type is 'all', [id] is discarded.
 If 'account', it should be an AWS account id. If 'company', it should be a company id.
 If 'billinggroup', it should be a billing group id.`,
 		Run: func(cmd *cobra.Command, args []string) {

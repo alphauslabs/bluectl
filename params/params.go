@@ -6,4 +6,5 @@ var (
 	ClientSecret string
 	OutFile      string
 	OutFmt       string
+	CleanOut     bool
 )

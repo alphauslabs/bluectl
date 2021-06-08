@@ -11,6 +11,7 @@ import (
 
 	"github.com/alphauslabs/blue-sdk-go/awscost/v1"
 	"github.com/alphauslabs/bluectl/params"
+	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/spf13/cobra"
@@ -53,7 +54,13 @@ If 'billinggroup', it should be a billing group id.`,
 			}
 
 			ctx := context.Background()
-			client, err := awscost.NewClient(ctx)
+			mycon, err := grpcconn.GetConnection(ctx, "awscost")
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := awscost.NewClient(ctx, &awscost.ClientOptions{Conn: mycon})
 			if err != nil {
 				fnerr(err)
 				return
