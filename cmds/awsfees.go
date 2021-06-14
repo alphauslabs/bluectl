@@ -140,8 +140,8 @@ If 'billinggroup', it should be a billing group id.`,
 
 			switch typ {
 			case "all":
-				stream, err := client.StreamReadFees(ctx,
-					&awscost.StreamReadFeesRequest{
+				stream, err := client.ReadFees(ctx,
+					&awscost.ReadFeesRequest{
 						StartTime: tstart,
 						EndTime:   tend,
 					},
@@ -166,8 +166,8 @@ If 'billinggroup', it should be a billing group id.`,
 					fnWriteFile("all", v)
 				}
 			case "account":
-				stream, err := client.StreamReadAccountFees(ctx,
-					&awscost.StreamReadAccountFeesRequest{
+				stream, err := client.ReadAccountFees(ctx,
+					&awscost.ReadAccountFeesRequest{
 						Name:      args[0],
 						StartTime: tstart,
 						EndTime:   tend,
@@ -193,8 +193,8 @@ If 'billinggroup', it should be a billing group id.`,
 					fnWriteFile(args[0], v)
 				}
 			case "company":
-				stream, err := client.StreamReadCompanyFees(ctx,
-					&awscost.StreamReadCompanyFeesRequest{
+				stream, err := client.ReadCompanyFees(ctx,
+					&awscost.ReadCompanyFeesRequest{
 						Name:      args[0],
 						StartTime: tstart,
 						EndTime:   tend,
@@ -220,8 +220,8 @@ If 'billinggroup', it should be a billing group id.`,
 					fnWriteFile(args[0], v)
 				}
 			case "billinggroup":
-				stream, err := client.StreamReadBillingGroupFees(ctx,
-					&awscost.StreamReadBillingGroupFeesRequest{
+				stream, err := client.ReadBillingGroupFees(ctx,
+					&awscost.ReadBillingGroupFeesRequest{
 						Name:      args[0],
 						StartTime: tstart,
 						EndTime:   tend,
