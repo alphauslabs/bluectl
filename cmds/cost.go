@@ -9,13 +9,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/alphauslabs/blue-sdk-go/awscost/v1"
+	awstypes "github.com/alphauslabs/blue-sdk-go/api/aws"
+	"github.com/alphauslabs/blue-sdk-go/cost/v1"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func AwsCostCmd() *cobra.Command {
@@ -28,11 +27,10 @@ func AwsCostCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "awscost [id]",
+		Use:   "aws-costs [id]",
 		Short: "Read AWS usage-based costs",
 		Long: `Read AWS usage-based costs based on the type. If --type is 'all', [id] is discarded.
-If 'account', it should be an AWS account id. If 'company', it should be a company id.
-If 'billinggroup', it should be a billing group id.`,
+If 'account', it should be an AWS account id. If 'billinggroup', it should be a billing group id.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -60,7 +58,7 @@ If 'billinggroup', it should be a billing group id.`,
 				return
 			}
 
-			client, err := awscost.NewClient(ctx, &awscost.ClientOptions{Conn: mycon})
+			client, err := cost.NewClient(ctx, &cost.ClientOptions{Conn: mycon})
 			if err != nil {
 				fnerr(err)
 				return
@@ -87,7 +85,6 @@ If 'billinggroup', it should be a billing group id.`,
 				case "csv":
 					wf.Write([]string{
 						"name",
-						"companyId",
 						"billingGroupId",
 						"account",
 						"date",
@@ -112,7 +109,7 @@ If 'billinggroup', it should be a billing group id.`,
 				}
 			}
 
-			fnWriteFile := func(name string, v *awscost.Cost) {
+			fnWriteFile := func(name string, v *awstypes.Cost) {
 				b, _ := json.Marshal(v)
 				fmt.Println(string(b))
 				if params.OutFile != "" {
@@ -131,7 +128,6 @@ If 'billinggroup', it should be a billing group id.`,
 					case "csv":
 						wf.Write([]string{
 							name,
-							v.CompanyId,
 							v.BillingGroupId,
 							v.Account,
 							v.Date.AsTime().Format(time.RFC3339),
@@ -146,7 +142,7 @@ If 'billinggroup', it should be a billing group id.`,
 							v.Description,
 							tags,
 							cc,
-							fmt.Sprintf("%.9f", v.UsageAmount),
+							fmt.Sprintf("%.9f", v.Usage),
 							fmt.Sprintf("%.9f", v.Cost),
 						})
 					case "json":
@@ -155,35 +151,34 @@ If 'billinggroup', it should be a billing group id.`,
 				}
 			}
 
-			var tstart, tend *timestamp.Timestamp
+			var ts, te time.Time
 			if start != "" {
-				t, err := time.Parse("2006-01-02", start)
+				ts, err = time.Parse("2006-01-02", start)
 				if err != nil {
 					fnerr(err)
 					return
 				}
 
-				tstart = timestamppb.New(t)
 			}
 
 			if end != "" {
-				t, err := time.Parse("2006-01-02", end)
+				te, err = time.Parse("2006-01-02", end)
 				if err != nil {
 					fnerr(err)
 					return
 				}
-
-				tend = timestamppb.New(t)
 			}
 
 			switch typ {
 			case "all":
 				stream, err := client.ReadCosts(ctx,
-					&awscost.ReadCostsRequest{
-						StartTime:             tstart,
-						EndTime:               tend,
-						IncludeTags:           includeTags,
-						IncludeCostCategories: includeCostCategories,
+					&cost.ReadCostsRequest{
+						StartTime: ts.Format("20060102"),
+						EndTime:   te.Format("20060102"),
+						AwsOptions: &cost.AwsOptions{
+							IncludeTags:           includeTags,
+							IncludeCostCategories: includeCostCategories,
+						},
 					},
 				)
 
@@ -203,16 +198,18 @@ If 'billinggroup', it should be a billing group id.`,
 						return
 					}
 
-					fnWriteFile("all", v)
+					fnWriteFile("all", v.Aws)
 				}
 			case "account":
 				stream, err := client.ReadAccountCosts(ctx,
-					&awscost.ReadAccountCostsRequest{
-						Name:                  args[0],
-						StartTime:             tstart,
-						EndTime:               tend,
-						IncludeTags:           includeTags,
-						IncludeCostCategories: includeCostCategories,
+					&cost.ReadAccountCostsRequest{
+						Name:      args[0],
+						StartTime: ts.Format("20060102"),
+						EndTime:   te.Format("20060102"),
+						AwsOptions: &cost.AwsOptions{
+							IncludeTags:           includeTags,
+							IncludeCostCategories: includeCostCategories,
+						},
 					},
 				)
 
@@ -232,45 +229,18 @@ If 'billinggroup', it should be a billing group id.`,
 						return
 					}
 
-					fnWriteFile(args[0], v)
-				}
-			case "company":
-				stream, err := client.ReadCompanyCosts(ctx,
-					&awscost.ReadCompanyCostsRequest{
-						Name:                  args[0],
-						StartTime:             tstart,
-						EndTime:               tend,
-						IncludeTags:           includeTags,
-						IncludeCostCategories: includeCostCategories,
-					},
-				)
-
-				if err != nil {
-					fnerr(err)
-					return
-				}
-
-				for {
-					v, err := stream.Recv()
-					if err == io.EOF {
-						break
-					}
-
-					if err != nil {
-						fnerr(err)
-						return
-					}
-
-					fnWriteFile(args[0], v)
+					fnWriteFile(args[0], v.Aws)
 				}
 			case "billinggroup":
 				stream, err := client.ReadBillingGroupCosts(ctx,
-					&awscost.ReadBillingGroupCostsRequest{
-						Name:                  args[0],
-						StartTime:             tstart,
-						EndTime:               tend,
-						IncludeTags:           includeTags,
-						IncludeCostCategories: includeCostCategories,
+					&cost.ReadBillingGroupCostsRequest{
+						Name:      args[0],
+						StartTime: ts.Format("20060102"),
+						EndTime:   te.Format("20060102"),
+						AwsOptions: &cost.AwsOptions{
+							IncludeTags:           includeTags,
+							IncludeCostCategories: includeCostCategories,
+						},
 					},
 				)
 
@@ -290,7 +260,7 @@ If 'billinggroup', it should be a billing group id.`,
 						return
 					}
 
-					fnWriteFile(args[0], v)
+					fnWriteFile(args[0], v.Aws)
 				}
 			default:
 				fnerr(fmt.Errorf("type unsupported: %v", typ))
@@ -304,7 +274,7 @@ If 'billinggroup', it should be a billing group id.`,
 	}
 
 	cmd.Flags().SortFlags = false
-	cmd.Flags().StringVar(&typ, "type", "account", "type of cost to read: all, account, company, billinggroup")
+	cmd.Flags().StringVar(&typ, "type", "account", "type of cost to read: all, account, billinggroup")
 	cmd.Flags().StringVar(&start, "start", start, "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
 	cmd.Flags().StringVar(&end, "end", end, "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
 	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
