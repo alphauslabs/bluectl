@@ -52,7 +52,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 			}
 
 			ctx := context.Background()
-			mycon, err := grpcconn.GetConnection(ctx, "awscost")
+			mycon, err := grpcconn.GetConnection(ctx, "cost")
 			if err != nil {
 				fnerr(err)
 				return
@@ -173,6 +173,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 			case "all":
 				stream, err := client.ReadCosts(ctx,
 					&cost.ReadCostsRequest{
+						Vendor:    "aws",
 						StartTime: ts.Format("20060102"),
 						EndTime:   te.Format("20060102"),
 						AwsOptions: &cost.AwsOptions{
@@ -203,6 +204,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 			case "account":
 				stream, err := client.ReadAccountCosts(ctx,
 					&cost.ReadAccountCostsRequest{
+						Vendor:    "aws",
 						Name:      args[0],
 						StartTime: ts.Format("20060102"),
 						EndTime:   te.Format("20060102"),
@@ -234,6 +236,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 			case "billinggroup":
 				stream, err := client.ReadBillingGroupCosts(ctx,
 					&cost.ReadBillingGroupCostsRequest{
+						Vendor:    "aws",
 						Name:      args[0],
 						StartTime: ts.Format("20060102"),
 						EndTime:   te.Format("20060102"),
@@ -275,8 +278,8 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&typ, "type", "account", "type of cost to read: all, account, billinggroup")
-	cmd.Flags().StringVar(&start, "start", start, "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
-	cmd.Flags().StringVar(&end, "end", end, "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
+	cmd.Flags().StringVar(&start, "start", time.Now().UTC().Format("2006-01")+"-01", "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
+	cmd.Flags().StringVar(&end, "end", time.Now().UTC().Format("2006-01-02"), "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
 	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
 	cmd.Flags().BoolVar(&includeCostCategories, "include-costcategories", includeCostCategories, "if true, include cost categories in the stream")
 	return cmd
