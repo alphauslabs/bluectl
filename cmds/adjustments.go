@@ -162,7 +162,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 				stream, err := client.ReadAccountAdjustments(ctx,
 					&cost.ReadAccountAdjustmentsRequest{
 						Vendor:    "aws",
-						Name:      args[0],
+						Id:        args[0],
 						StartTime: ts.Format("20060102"),
 						EndTime:   te.Format("20060102"),
 					},
@@ -190,7 +190,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 				stream, err := client.ReadBillingGroupAdjustments(ctx,
 					&cost.ReadBillingGroupAdjustmentsRequest{
 						Vendor:    "aws",
-						Name:      args[0],
+						Id:        args[0],
 						StartTime: ts.Format("20060102"),
 						EndTime:   te.Format("20060102"),
 					},
