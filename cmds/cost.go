@@ -19,7 +19,7 @@ import (
 
 func AwsCostCmd() *cobra.Command {
 	var (
-		typ                   string
+		costtype              string
 		start                 string
 		end                   string
 		includeTags           bool
@@ -44,7 +44,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 				ret = 1
 			}
 
-			if typ != "all" {
+			if costtype != "all" {
 				if len(args) == 0 {
 					fnerr(fmt.Errorf("id is required"))
 					return
@@ -169,105 +169,44 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 				}
 			}
 
-			switch typ {
-			case "all":
-				stream, err := client.ReadCosts(ctx,
-					&cost.ReadCostsRequest{
-						Vendor:    "aws",
-						StartTime: ts.Format("20060102"),
-						EndTime:   te.Format("20060102"),
-						AwsOptions: &cost.AwsOptions{
-							IncludeTags:           includeTags,
-							IncludeCostCategories: includeCostCategories,
-						},
-					},
-				)
+			in := cost.ReadCostsRequest{
+				Vendor:    "aws",
+				StartTime: ts.Format("20060102"),
+				EndTime:   te.Format("20060102"),
+				AwsOptions: &cost.AwsOptions{
+					IncludeTags:           includeTags,
+					IncludeCostCategories: includeCostCategories,
+				},
+			}
 
-				if err != nil {
-					fnerr(err)
-					return
-				}
-
-				for {
-					v, err := stream.Recv()
-					if err == io.EOF {
-						break
-					}
-
-					if err != nil {
-						fnerr(err)
-						return
-					}
-
-					fnWriteFile("all", v.Aws)
-				}
+			switch costtype {
 			case "account":
-				stream, err := client.ReadAccountCosts(ctx,
-					&cost.ReadAccountCostsRequest{
-						Vendor:    "aws",
-						Id:        args[0],
-						StartTime: ts.Format("20060102"),
-						EndTime:   te.Format("20060102"),
-						AwsOptions: &cost.AwsOptions{
-							IncludeTags:           includeTags,
-							IncludeCostCategories: includeCostCategories,
-						},
-					},
-				)
-
-				if err != nil {
-					fnerr(err)
-					return
-				}
-
-				for {
-					v, err := stream.Recv()
-					if err == io.EOF {
-						break
-					}
-
-					if err != nil {
-						fnerr(err)
-						return
-					}
-
-					fnWriteFile(args[0], v.Aws)
-				}
+				in.AccountId = args[0]
 			case "billinggroup":
-				stream, err := client.ReadBillingGroupCosts(ctx,
-					&cost.ReadBillingGroupCostsRequest{
-						Vendor:    "aws",
-						Id:        args[0],
-						StartTime: ts.Format("20060102"),
-						EndTime:   te.Format("20060102"),
-						AwsOptions: &cost.AwsOptions{
-							IncludeTags:           includeTags,
-							IncludeCostCategories: includeCostCategories,
-						},
-					},
-				)
+				in.BillingGroupId = args[0]
+			default:
+				fnerr(fmt.Errorf("type unsupported: %v", costtype))
+				return
+			}
+
+			stream, err := client.ReadCosts(ctx, &in)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			for {
+				v, err := stream.Recv()
+				if err == io.EOF {
+					break
+				}
 
 				if err != nil {
 					fnerr(err)
 					return
 				}
 
-				for {
-					v, err := stream.Recv()
-					if err == io.EOF {
-						break
-					}
-
-					if err != nil {
-						fnerr(err)
-						return
-					}
-
-					fnWriteFile(args[0], v.Aws)
-				}
-			default:
-				fnerr(fmt.Errorf("type unsupported: %v", typ))
-				return
+				fnWriteFile("all", v.Aws)
 			}
 
 			if params.OutFile != "" {
@@ -277,7 +216,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 	}
 
 	cmd.Flags().SortFlags = false
-	cmd.Flags().StringVar(&typ, "type", "account", "type of cost to read: all, account, billinggroup")
+	cmd.Flags().StringVar(&costtype, "type", "account", "type of cost to read: all, account, billinggroup")
 	cmd.Flags().StringVar(&start, "start", time.Now().UTC().Format("2006-01")+"-01", "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
 	cmd.Flags().StringVar(&end, "end", time.Now().UTC().Format("2006-01-02"), "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
 	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
