@@ -130,7 +130,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 							name,
 							v.BillingGroupId,
 							v.Account,
-							v.Date.AsTime().Format(time.RFC3339),
+							v.Date,
 							v.ProductCode,
 							v.ServiceCode,
 							v.Region,
@@ -173,7 +173,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 				Vendor:    "aws",
 				StartTime: ts.Format("20060102"),
 				EndTime:   te.Format("20060102"),
-				AwsOptions: &cost.AwsOptions{
+				AwsOptions: &cost.ReadCostsRequestAwsOptions{
 					IncludeTags:           includeTags,
 					IncludeCostCategories: includeCostCategories,
 				},
@@ -183,7 +183,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 			case "account":
 				in.AccountId = args[0]
 			case "billinggroup":
-				in.BillingGroupId = args[0]
+				in.BillingInternalId = args[0]
 			default:
 				fnerr(fmt.Errorf("type unsupported: %v", costtype))
 				return
