@@ -19,6 +19,7 @@ import (
 
 func AwsCostCmd() *cobra.Command {
 	var (
+		rawInput              string
 		costtype              string
 		start                 string
 		end                   string
@@ -30,7 +31,12 @@ func AwsCostCmd() *cobra.Command {
 		Use:   "aws-costs [id]",
 		Short: "Read AWS usage-based costs",
 		Long: `Read AWS usage-based costs based on the type. If --type is 'all', [id] is discarded.
-If 'account', it should be an AWS account id. If 'billinggroup', it should be a billing group id.`,
+If 'account', it should be an AWS account id. If 'billinggroup', it should be a billing group id.
+
+You can also use the --raw-input flag and provide the full JSON string input described in
+https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCosts. This option is provided
+so you can utilize all the API features not yet supported by the other flags. Note that
+this will invalidate all other flags.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -42,13 +48,6 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 			fnerr := func(e error) {
 				logger.Error(e)
 				ret = 1
-			}
-
-			if costtype != "all" {
-				if len(args) == 0 {
-					fnerr(fmt.Errorf("id is required"))
-					return
-				}
 			}
 
 			ctx := context.Background()
@@ -97,10 +96,19 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 						"operation",
 						"invoiceId",
 						"description",
+						"resourceId",
 						"tags",
 						"costCategories",
 						"usageAmount",
 						"cost",
+						"baseCurrency",
+						"exchangeRate",
+						"targetCost",
+						"targetCurrency",
+						"effectiveCost",
+						"targetEffectiveCost",
+						"amortizedCost",
+						"targetAmortizedCost",
 					})
 				case "json":
 				default:
@@ -140,10 +148,19 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 							v.Operation,
 							v.InvoiceId,
 							v.Description,
+							v.ResourceId,
 							tags,
 							cc,
 							fmt.Sprintf("%.9f", v.Usage),
 							fmt.Sprintf("%.9f", v.Cost),
+							v.BaseCurrency,
+							fmt.Sprintf("%.f", v.ExchangeRate),
+							fmt.Sprintf("%.9f", v.TargetCost),
+							v.TargetCurrency,
+							fmt.Sprintf("%.9f", v.EffectiveCost),
+							fmt.Sprintf("%.9f", v.TargetEffectiveCost),
+							fmt.Sprintf("%.9f", v.AmortizedCost),
+							fmt.Sprintf("%.9f", v.TargetAmortizedCost),
 						})
 					case "json":
 						fmt.Fprintf(f, "%v\n", string(b))
@@ -151,48 +168,73 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 				}
 			}
 
-			var ts, te time.Time
-			if start != "" {
-				ts, err = time.Parse("2006-01-02", start)
+			var stream cost.Cost_ReadCostsClient
+
+			switch {
+			case rawInput != "":
+				var in cost.ReadCostsRequest
+				err := json.Unmarshal([]byte(rawInput), &in)
 				if err != nil {
 					fnerr(err)
 					return
 				}
 
-			}
-
-			if end != "" {
-				te, err = time.Parse("2006-01-02", end)
+				stream, err = client.ReadCosts(ctx, &in)
 				if err != nil {
 					fnerr(err)
 					return
 				}
-			}
-
-			in := cost.ReadCostsRequest{
-				Vendor:    "aws",
-				StartTime: ts.Format("20060102"),
-				EndTime:   te.Format("20060102"),
-				AwsOptions: &cost.ReadCostsRequestAwsOptions{
-					IncludeTags:           includeTags,
-					IncludeCostCategories: includeCostCategories,
-				},
-			}
-
-			switch costtype {
-			case "account":
-				in.AccountId = args[0]
-			case "billinggroup":
-				in.BillingInternalId = args[0]
 			default:
-				fnerr(fmt.Errorf("type unsupported: %v", costtype))
-				return
-			}
+				if rawInput == "" && costtype != "all" {
+					if len(args) == 0 {
+						fnerr(fmt.Errorf("id is required"))
+						return
+					}
+				}
 
-			stream, err := client.ReadCosts(ctx, &in)
-			if err != nil {
-				fnerr(err)
-				return
+				var ts, te time.Time
+				if start != "" {
+					ts, err = time.Parse("2006-01-02", start)
+					if err != nil {
+						fnerr(err)
+						return
+					}
+
+				}
+
+				if end != "" {
+					te, err = time.Parse("2006-01-02", end)
+					if err != nil {
+						fnerr(err)
+						return
+					}
+				}
+
+				in := cost.ReadCostsRequest{
+					Vendor:    "aws",
+					StartTime: ts.Format("20060102"),
+					EndTime:   te.Format("20060102"),
+					AwsOptions: &cost.ReadCostsRequestAwsOptions{
+						IncludeTags:           includeTags,
+						IncludeCostCategories: includeCostCategories,
+					},
+				}
+
+				switch costtype {
+				case "account":
+					in.AccountId = args[0]
+				case "billinggroup":
+					in.BillingInternalId = args[0]
+				default:
+					fnerr(fmt.Errorf("type unsupported: %v", costtype))
+					return
+				}
+
+				stream, err = client.ReadCosts(ctx, &in)
+				if err != nil {
+					fnerr(err)
+					return
+				}
 			}
 
 			for {
@@ -216,6 +258,7 @@ If 'account', it should be an AWS account id. If 'billinggroup', it should be a 
 	}
 
 	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCosts")
 	cmd.Flags().StringVar(&costtype, "type", "account", "type of cost to read: all, account, billinggroup")
 	cmd.Flags().StringVar(&start, "start", time.Now().UTC().Format("2006-01")+"-01", "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
 	cmd.Flags().StringVar(&end, "end", time.Now().UTC().Format("2006-01-02"), "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
