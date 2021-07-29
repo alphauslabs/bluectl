@@ -40,6 +40,7 @@ func init() {
 		cmds.AccessTokenCmd(),
 		cmds.AwsCostCmd(),
 		cmds.AwsFeesCmd(),
+		cmds.CurImportHistoryCmd(),
 	)
 }
 
