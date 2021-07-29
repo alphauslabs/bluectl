@@ -82,7 +82,6 @@ Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an 
 				switch params.OutFmt {
 				case "csv":
 					wf.Write([]string{
-						"name",
 						"billingGroupId",
 						"account",
 						"date",
@@ -116,7 +115,7 @@ Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an 
 				}
 			}
 
-			fnWriteFile := func(name string, v *awstypes.Cost) {
+			fnWriteFile := func(v *awstypes.Cost) {
 				b, _ := json.Marshal(v)
 				fmt.Println(string(b))
 				if params.OutFile != "" {
@@ -134,7 +133,6 @@ Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an 
 					switch params.OutFmt {
 					case "csv":
 						wf.Write([]string{
-							name,
 							v.BillingGroupId,
 							v.Account,
 							v.Date,
@@ -247,7 +245,7 @@ Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an 
 					return
 				}
 
-				fnWriteFile("all", v.Aws)
+				fnWriteFile(v.Aws)
 			}
 
 			if params.OutFile != "" {

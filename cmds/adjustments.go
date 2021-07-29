@@ -93,14 +93,13 @@ it should be a billing group id.`,
 				}
 			}
 
-			fnWriteFile := func(name string, v *awstypes.Adjustment) {
+			fnWriteFile := func(v *awstypes.Adjustment) {
 				b, _ := json.Marshal(v)
 				fmt.Println(string(b))
 				if params.OutFile != "" {
 					switch params.OutFmt {
 					case "csv":
 						wf.Write([]string{
-							name,
 							v.BillingGroupId,
 							v.Account,
 							v.Date,
@@ -194,7 +193,7 @@ it should be a billing group id.`,
 					return
 				}
 
-				fnWriteFile("all", v.Aws)
+				fnWriteFile(v.Aws)
 			}
 
 			if params.OutFile != "" {
