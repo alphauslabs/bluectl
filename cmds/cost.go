@@ -30,13 +30,12 @@ func AwsCostCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws-costs [id]",
 		Short: "Read AWS usage-based costs",
-		Long: `Read AWS usage-based costs based on the type. If --type is 'all', [id] is discarded.
-If 'account', it should be an AWS account id. If 'billinggroup', it should be a billing group id.
+		Long: `Read AWS usage-based costs. At the moment, we recommend you to use the --raw-input flag to take advantage
+of the API's full features described in https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCosts.
+Note that this will invalidate all the other flags.
 
-You can also use the --raw-input flag and provide the full JSON string input described in
-https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCosts. This option is provided
-so you can utilize all the API features not yet supported by the other flags. Note that
-this will invalidate all other flags.`,
+Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an AWS account id. If
+'billinggroup', it should be a billing group id.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -194,7 +193,7 @@ this will invalidate all other flags.`,
 
 				var ts, te time.Time
 				if start != "" {
-					ts, err = time.Parse("2006-01-02", start)
+					ts, err = time.Parse("20060102", start)
 					if err != nil {
 						fnerr(err)
 						return
@@ -203,7 +202,7 @@ this will invalidate all other flags.`,
 				}
 
 				if end != "" {
-					te, err = time.Parse("2006-01-02", end)
+					te, err = time.Parse("20060102", end)
 					if err != nil {
 						fnerr(err)
 						return
@@ -260,8 +259,8 @@ this will invalidate all other flags.`,
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCosts")
 	cmd.Flags().StringVar(&costtype, "type", "account", "type of cost to read: all, account, billinggroup")
-	cmd.Flags().StringVar(&start, "start", time.Now().UTC().Format("2006-01")+"-01", "yyyy-mm-dd: start date to stream data; default: first day of the current month (UTC)")
-	cmd.Flags().StringVar(&end, "end", time.Now().UTC().Format("2006-01-02"), "yyyy-mm-dd: end date to stream data; default: current date (UTC)")
+	cmd.Flags().StringVar(&start, "start", time.Now().UTC().Format("200601")+"01", "yyyymmdd: start date to stream data; default: first day of the current month (UTC)")
+	cmd.Flags().StringVar(&end, "end", time.Now().UTC().Format("20060102"), "yyyymmdd: end date to stream data; default: current date (UTC)")
 	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
 	cmd.Flags().BoolVar(&includeCostCategories, "include-costcategories", includeCostCategories, "if true, include cost categories in the stream")
 	return cmd
