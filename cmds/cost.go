@@ -185,7 +185,7 @@ this will invalidate all other flags.`,
 					return
 				}
 			default:
-				if rawInput == "" && costtype != "all" {
+				if costtype != "all" {
 					if len(args) == 0 {
 						fnerr(fmt.Errorf("id is required"))
 						return
