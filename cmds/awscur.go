@@ -75,8 +75,8 @@ func CurImportHistoryCmd() *cobra.Command {
 				return
 			}
 
-			switch params.OutFmt {
-			case "csv":
+			switch {
+			case params.OutFile != "" && params.OutFmt == "csv":
 				if params.OutFile != "" {
 					var f *os.File
 					var wf *csv.Writer
@@ -98,7 +98,7 @@ func CurImportHistoryCmd() *cobra.Command {
 					}
 				}
 				fallthrough
-			case "json":
+			case params.OutFmt == "json":
 				b, _ := json.Marshal(resp)
 				logger.SetCleanOutput()
 				logger.Info(string(b))
