@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -75,6 +76,28 @@ func CurImportHistoryCmd() *cobra.Command {
 			}
 
 			switch params.OutFmt {
+			case "csv":
+				if params.OutFile != "" {
+					var f *os.File
+					var wf *csv.Writer
+					f, err = os.Create(params.OutFile)
+					if err != nil {
+						fnerr(err)
+						return
+					}
+
+					wf = csv.NewWriter(f)
+					defer func() {
+						wf.Flush()
+						f.Close()
+					}()
+
+					wf.Write([]string{"payer", "month", "timestamps"})
+					for _, v := range resp.Timestamps {
+						wf.Write([]string{resp.Id, resp.Month, v})
+					}
+				}
+				fallthrough
 			case "json":
 				b, _ := json.Marshal(resp)
 				logger.SetCleanOutput()
