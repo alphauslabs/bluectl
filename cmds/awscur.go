@@ -23,8 +23,8 @@ func CurImportHistoryCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "aws-curhistory <id>",
-		Short: "Read an AWS management account's CUR import history",
-		Long:  `Read an AWS management account's CUR import history.`,
+		Short: "Query an AWS management account's CUR import history",
+		Long:  `Query an AWS management account's CUR import history.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
