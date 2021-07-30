@@ -4,16 +4,30 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/fatih/color"
 )
 
 var (
+	uf = func(s string) string {
+		r, _ := strconv.ParseInt(strings.TrimPrefix(s, "\\U"), 16, 32)
+		return string(r)
+	}
+
 	green = color.New(color.FgGreen).SprintFunc()
 	red   = color.New(color.FgRed).SprintFunc()
-	info  = log.New(os.Stdout, green("[info] "), log.LstdFlags)
-	fail  = log.New(os.Stdout, red("[fail] "), log.LstdFlags)
+	info  = log.New(os.Stdout, green(uf("\\U1F7E2")+" "), log.LstdFlags) // green circle
+	fail  = log.New(os.Stdout, red(uf("\\U274C")+" "), log.LstdFlags)    // red x mark
 )
+
+func SetNoEmoji() {
+	info.SetFlags(log.LstdFlags)
+	info.SetPrefix(green("[info] "))
+	fail.SetFlags(log.LstdFlags)
+	fail.SetPrefix(red("[fail] "))
+}
 
 func SetCleanOutput() {
 	info.SetFlags(0)
