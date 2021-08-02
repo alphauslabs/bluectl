@@ -13,7 +13,7 @@ import (
 var (
 	uf = func(s string) string {
 		r, _ := strconv.ParseInt(strings.TrimPrefix(s, "\\U"), 16, 32)
-		return string(r)
+		return string(rune(r))
 	}
 
 	soliddot    = "\\U25CF"
