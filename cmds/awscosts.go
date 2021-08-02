@@ -221,7 +221,7 @@ Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an 
 				case "account":
 					in.AccountId = args[0]
 				case "billinggroup":
-					in.BillingInternalId = args[0]
+					in.GroupId = args[0]
 				default:
 					fnerr(fmt.Errorf("type unsupported: %v", costtype))
 					return
