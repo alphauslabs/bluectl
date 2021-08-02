@@ -100,7 +100,7 @@ func CurImportHistoryCmd() *cobra.Command {
 				fallthrough
 			case params.OutFmt == "json":
 				b, _ := json.Marshal(resp)
-				logger.SetCleanOutput()
+				logger.SetPrefix(logger.PrefixNone)
 				logger.Info(string(b))
 			default:
 				table := tablewriter.NewWriter(os.Stdout)

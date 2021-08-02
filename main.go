@@ -17,7 +17,7 @@ var (
 		Long:  `Command line interface for Alphaus services.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if params.CleanOut {
-				logger.SetCleanOutput()
+				logger.SetPrefix(logger.PrefixNone)
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {

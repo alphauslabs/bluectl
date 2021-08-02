@@ -16,24 +16,63 @@ var (
 		return string(r)
 	}
 
+	soliddot    = "\\U25CF"
+	greencircle = "\\U1F7E2"
+	xmark       = "\\U274C"
+
 	green = color.New(color.FgGreen).SprintFunc()
 	red   = color.New(color.FgRed).SprintFunc()
-	info  = log.New(os.Stdout, green(uf("\\U1F7E2")+" "), log.LstdFlags) // green circle
-	fail  = log.New(os.Stdout, red(uf("\\U274C")+" "), log.LstdFlags)    // red x mark
+
+	info = log.New(os.Stdout, green(uf(soliddot)+" "), log.LstdFlags)
+	fail = log.New(os.Stdout, red(uf(soliddot)+" "), log.LstdFlags)
 )
 
-func SetNoEmoji() {
+const (
+	PrefixNone  = iota // empty prefix
+	PrefixText         // info/fail text with timestamp
+	PrefixEmoji        // use emoji prefix with timestamp
+)
+
+// SetPrefix sets the prefix style to p. Default is colored dots with timestamps.
+func SetPrefix(p ...int) {
 	info.SetFlags(log.LstdFlags)
-	info.SetPrefix(green("[info] "))
 	fail.SetFlags(log.LstdFlags)
-	fail.SetPrefix(red("[fail] "))
+	info.SetPrefix(green(uf(soliddot)) + " ")
+	fail.SetPrefix(red(uf(soliddot)) + " ")
+	if len(p) == 0 {
+		return
+	}
+
+	switch p[0] {
+	case PrefixNone:
+		SetNoTimestamp()
+		info.SetPrefix("")
+		fail.SetPrefix("")
+	case PrefixText:
+		info.SetFlags(log.LstdFlags)
+		info.SetPrefix(green("[info]") + " ")
+		fail.SetFlags(log.LstdFlags)
+		fail.SetPrefix(red("[fail]") + " ")
+	case PrefixEmoji:
+		info.SetFlags(log.LstdFlags)
+		info.SetPrefix(green(uf(greencircle)) + " ")
+		fail.SetFlags(log.LstdFlags)
+		fail.SetPrefix(red(uf(xmark)) + " ")
+	}
 }
 
-func SetCleanOutput() {
+func SetNoTimestamp() {
 	info.SetFlags(0)
-	info.SetPrefix("")
 	fail.SetFlags(0)
-	fail.SetPrefix("")
+}
+
+func SendToStderr(all ...bool) {
+	fail.SetOutput(os.Stderr)
+	if len(all) > 0 {
+		if all[0] {
+			info.SetOutput(os.Stderr)
+		}
+	}
 }
 
 // Info prints `v` into standard output (via log) with a green prefix "info:".
