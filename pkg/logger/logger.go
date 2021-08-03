@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/fatih/color"
 )
@@ -22,23 +23,23 @@ var (
 
 	green = color.New(color.FgGreen).SprintFunc()
 	red   = color.New(color.FgRed).SprintFunc()
+	info  = log.New(os.Stdout, "", log.LstdFlags)
+	fail  = log.New(os.Stdout, "", log.LstdFlags)
 
-	info = log.New(os.Stdout, green(uf(soliddot)+" "), log.LstdFlags)
-	fail = log.New(os.Stdout, red(uf(soliddot)+" "), log.LstdFlags)
+	pfx int32
 )
 
 const (
-	PrefixNone  = iota // empty prefix
-	PrefixText         // info/fail text with timestamp
-	PrefixEmoji        // use emoji prefix with timestamp
+	PrefixDefault int32 = iota // solid dot with timestamp
+	PrefixNone                 // empty prefix
+	PrefixText                 // info/fail text with timestamp
+	PrefixEmoji                // use emoji prefix with timestamp
 )
 
 // SetPrefix sets the prefix style to p. Default is colored dots with timestamps.
-func SetPrefix(p ...int) {
+func SetPrefix(p ...int32) {
 	info.SetFlags(log.LstdFlags)
 	fail.SetFlags(log.LstdFlags)
-	info.SetPrefix(green(uf(soliddot)) + " ")
-	fail.SetPrefix(red(uf(soliddot)) + " ")
 	if len(p) == 0 {
 		return
 	}
@@ -46,19 +47,12 @@ func SetPrefix(p ...int) {
 	switch p[0] {
 	case PrefixNone:
 		SetNoTimestamp()
-		info.SetPrefix("")
-		fail.SetPrefix("")
-	case PrefixText:
+	default:
 		info.SetFlags(log.LstdFlags)
-		info.SetPrefix(green("[info]") + " ")
 		fail.SetFlags(log.LstdFlags)
-		fail.SetPrefix(red("[fail]") + " ")
-	case PrefixEmoji:
-		info.SetFlags(log.LstdFlags)
-		info.SetPrefix(green(uf(greencircle)) + " ")
-		fail.SetFlags(log.LstdFlags)
-		fail.SetPrefix(red(uf(xmark)) + " ")
 	}
+
+	atomic.StoreInt32(&pfx, p[0])
 }
 
 func SetNoTimestamp() {
@@ -75,26 +69,50 @@ func SendToStderr(all ...bool) {
 	}
 }
 
+// Value of f doesn't matter, just its presence.
+func getPfx(f ...bool) string {
+	switch atomic.LoadInt32(&pfx) {
+	case PrefixNone:
+		return ""
+	case PrefixText:
+		if len(f) > 0 {
+			return "[fail] "
+		} else {
+			return "[info] "
+		}
+	case PrefixEmoji:
+		if len(f) > 0 {
+			return uf(xmark) + " "
+		} else {
+			return uf(greencircle) + " "
+		}
+	case PrefixDefault:
+		fallthrough
+	default:
+		return uf(soliddot) + " "
+	}
+}
+
 // Info prints `v` into standard output (via log) with a green prefix "info:".
 func Info(v ...interface{}) {
 	m := fmt.Sprintln(v...)
-	info.Print(m)
+	info.Printf("%v%s", green(getPfx()), m)
 }
 
 // Infof is the formatted version of Info().
 func Infof(format string, v ...interface{}) {
 	m := fmt.Sprintf(format, v...)
-	info.Print(m)
+	info.Printf("%v%s", green(getPfx()), m)
 }
 
 // Error prints `v` into standard output (via log) with a red prefix "error:".
 func Error(v ...interface{}) {
 	m := fmt.Sprintln(v...)
-	fail.Print(m)
+	fail.Printf("%v%s", red(getPfx(true)), m)
 }
 
 // Errorf is the formatted version of Error().
 func Errorf(format string, v ...interface{}) {
 	m := fmt.Sprintf(format, v...)
-	fail.Print(m)
+	fail.Printf("%v%s", red(getPfx(true)), m)
 }
