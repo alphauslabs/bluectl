@@ -534,47 +534,53 @@ func AwsCalculateCostsCmd() *cobra.Command {
 			logger.Info(string(b))
 
 			if wait {
-				quit, cancel := context.WithCancel(context.Background())
-				done := make(chan struct{}, 1)
+				func() {
+					defer func(begin time.Time) {
+						logger.Info("duration:", time.Since(begin))
+					}(time.Now())
 
-				// Interrupt handler.
-				go func() {
-					sigch := make(chan os.Signal)
-					signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
-					<-sigch
-					cancel()
-				}()
+					quit, cancel := context.WithCancel(context.Background())
+					done := make(chan struct{}, 1)
 
-				go func() {
-					for {
-						q := context.WithValue(quit, struct{}{}, nil)
-						op, err := ops.WaitForOperation(q, ops.WaitForOperationInput{
-							Name: resp.Name,
-						})
+					// Interrupt handler.
+					go func() {
+						sigch := make(chan os.Signal)
+						signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
+						<-sigch
+						cancel()
+					}()
 
-						if err != nil {
-							logger.Error(err)
-							done <- struct{}{}
-							return
-						}
+					go func() {
+						for {
+							q := context.WithValue(quit, struct{}{}, nil)
+							op, err := ops.WaitForOperation(q, ops.WaitForOperationInput{
+								Name: resp.Name,
+							})
 
-						if op != nil {
-							if op.Done {
-								logger.Infof("[%v] done", resp.Name)
+							if err != nil {
+								logger.Error(err)
 								done <- struct{}{}
 								return
 							}
+
+							if op != nil {
+								if op.Done {
+									logger.Infof("[%v] done", resp.Name)
+									done <- struct{}{}
+									return
+								}
+							}
 						}
+					}()
+
+					logger.Infof("wait for [%v], this could take some time...", resp.Name)
+
+					select {
+					case <-done:
+					case <-quit.Done():
+						logger.Info("interrupted")
 					}
 				}()
-
-				logger.Infof("wait for [%v], this could take some time...", resp.Name)
-
-				select {
-				case <-done:
-				case <-quit.Done():
-					logger.Info("interrupted")
-				}
 			}
 		},
 	}
