@@ -44,6 +44,7 @@ func init() {
 	rootCmd.AddCommand(
 		cmds.AccessTokenCmd(),
 		cmds.WhoAmICmd(),
+		cmds.IamUsersCmd(),
 		cmds.AwsCostCmd(),
 		cmds.AwsPayerCmd(),
 		cmds.OpsCmd(),
