@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	_ "github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/bluectl/cmds"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/logger"
@@ -34,13 +35,14 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&params.ClientSecret, "client-secret", os.Getenv("ALPHAUS_CLIENT_SECRET"), "your client secret, defaults to $ALPHAUS_CLIENT_SECRET")
 	rootCmd.PersistentFlags().StringVar(&params.OutFile, "out", params.OutFile, "output file, if the command supports writing to file")
 	rootCmd.PersistentFlags().StringVar(&params.OutFmt, "outfmt", "csv", "output format: json, csv, valid if --out is set")
-	rootCmd.PersistentFlags().BoolVar(&params.CleanOut, "bare", params.CleanOut, "if true, set console output to barebones")
+	rootCmd.PersistentFlags().BoolVar(&params.CleanOut, "bare", params.CleanOut, "if true, set console output to barebones, easier for scripting")
 	rootCmd.AddCommand(
 		cmds.WhoAmICmd(),
 		cmds.AccessTokenCmd(),
 		cmds.AwsCostCmd(),
 		cmds.AwsFeesCmd(),
 		cmds.CurImportHistoryCmd(),
+		cmds.OpsCmd(),
 	)
 }
 
