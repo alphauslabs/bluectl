@@ -25,6 +25,7 @@ func AwsGetCostsCmd() *cobra.Command {
 	var (
 		rawInput              string
 		costtype              string
+		id                    string
 		start                 string
 		end                   string
 		includeTags           bool
@@ -32,14 +33,11 @@ func AwsGetCostsCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "get [id]",
+		Use:   "get",
 		Short: "Read AWS usage-based costs",
 		Long: `Read AWS usage-based costs. At the moment, we recommend you to use the --raw-input flag to take advantage
 of the API's full features described in https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCosts.
-Note that this will invalidate all the other flags.
-
-Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an AWS account id. If
-'billinggroup', it should be a billing group id.`,
+Note that this will invalidate all the other flags.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -180,6 +178,10 @@ Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an 
 					return
 				}
 
+				if in.Vendor == "" {
+					in.Vendor = "aws"
+				}
+
 				stream, err = client.ReadCosts(ctx, &in)
 				if err != nil {
 					fnerr(err)
@@ -187,7 +189,7 @@ Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an 
 				}
 			default:
 				if costtype != "all" {
-					if len(args) == 0 {
+					if id == "" {
 						fnerr(fmt.Errorf("id is required"))
 						return
 					}
@@ -223,9 +225,9 @@ Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an 
 
 				switch costtype {
 				case "account":
-					in.AccountId = args[0]
+					in.AccountId = id
 				case "billinggroup":
-					in.GroupId = args[0]
+					in.GroupId = id
 				default:
 					fnerr(fmt.Errorf("type unsupported: %v", costtype))
 					return
@@ -261,6 +263,7 @@ Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an 
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCosts")
 	cmd.Flags().StringVar(&costtype, "type", "account", "type of cost to read: all, account, billinggroup")
+	cmd.Flags().StringVar(&id, "id", id, "account id or billing group id, depending on --type, skipped if 'all'")
 	cmd.Flags().StringVar(&start, "start", time.Now().UTC().Format("200601")+"01", "yyyymmdd: start date to stream data; default: first day of the current month (UTC)")
 	cmd.Flags().StringVar(&end, "end", time.Now().UTC().Format("20060102"), "yyyymmdd: end date to stream data; default: current date (UTC)")
 	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
@@ -469,7 +472,7 @@ func AwsCalculateCostsCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "calc",
+		Use:   "calculate",
 		Short: "Trigger an ondemand AWS costs calculation",
 		Long:  `Trigger an ondemand AWS costs calculation.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -591,9 +594,9 @@ func AwsCalculateCostsCmd() *cobra.Command {
 	return cmd
 }
 
-func AwsCostsCmd() *cobra.Command {
+func AwsCostCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "awscosts [id]",
+		Use:   "awscost [id]",
 		Short: "Subcommand for AWS costs-related operations",
 		Long:  `Subcommand for AWS costs-related operations.`,
 		Run: func(cmd *cobra.Command, args []string) {

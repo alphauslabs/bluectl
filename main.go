@@ -15,14 +15,18 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "bluectl",
 		Short: "Command line interface for Alphaus services",
-		Long:  `Command line interface for Alphaus services.`,
+		Long: `Command line interface for Alphaus services.
+
+The general form is bluectl <resource[ subresource...]> <action> [flags]. Due to Blue API still in beta stage,
+most commands support the --raw-input flag to be always in sync with the current feature set of the API. See
+https://alphauslabs.github.io/blueapidocs/ for the latest API reference.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if params.CleanOut {
 				logger.SetPrefix(logger.PrefixNone)
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			logger.Error("invalid cmd, please run -h")
+			logger.Info("see -h for more information")
 		},
 	}
 )
@@ -30,17 +34,17 @@ var (
 func init() {
 	rootCmd.Flags().SortFlags = false
 	rootCmd.PersistentFlags().SortFlags = false
-	rootCmd.PersistentFlags().StringVar(&params.AuthUrl, "auth-url", os.Getenv("ALPHAUS_AUTH_URL"), "authentication URL, defaults to $ALPHAUS_AUTH_URL")
+	rootCmd.PersistentFlags().StringVar(&params.AuthUrl, "auth-url", os.Getenv("ALPHAUS_AUTH_URL"), "authentication URL, defaults to $ALPHAUS_AUTH_URL if set")
 	rootCmd.PersistentFlags().StringVar(&params.ClientId, "client-id", os.Getenv("ALPHAUS_CLIENT_ID"), "your client id, defaults to $ALPHAUS_CLIENT_ID")
 	rootCmd.PersistentFlags().StringVar(&params.ClientSecret, "client-secret", os.Getenv("ALPHAUS_CLIENT_SECRET"), "your client secret, defaults to $ALPHAUS_CLIENT_SECRET")
 	rootCmd.PersistentFlags().StringVar(&params.OutFile, "out", params.OutFile, "output file, if the command supports writing to file")
 	rootCmd.PersistentFlags().StringVar(&params.OutFmt, "outfmt", "csv", "output format: json, csv, valid if --out is set")
 	rootCmd.PersistentFlags().BoolVar(&params.CleanOut, "bare", params.CleanOut, "if true, set console output to barebones, easier for scripting")
 	rootCmd.AddCommand(
-		cmds.WhoAmICmd(),
 		cmds.AccessTokenCmd(),
-		cmds.AwsCostsCmd(),
-		cmds.CurImportHistoryCmd(),
+		cmds.WhoAmICmd(),
+		cmds.AwsCostCmd(),
+		cmds.AwsPayerCmd(),
 		cmds.OpsCmd(),
 	)
 }

@@ -18,11 +18,12 @@ import (
 
 func CurImportHistoryCmd() *cobra.Command {
 	var (
+		id    string
 		month string
 	)
 
 	cmd := &cobra.Command{
-		Use:   "curhistory <id>",
+		Use:   "get-curhistory",
 		Short: "Query an AWS management account's CUR import history",
 		Long:  `Query an AWS management account's CUR import history.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -38,8 +39,8 @@ func CurImportHistoryCmd() *cobra.Command {
 				ret = 1
 			}
 
-			if len(args) == 0 {
-				fnerr(fmt.Errorf("<id> can't be empty"))
+			if id == "" {
+				fnerr(fmt.Errorf("--id can't be empty"))
 				return
 			}
 
@@ -127,6 +128,25 @@ func CurImportHistoryCmd() *cobra.Command {
 	}
 
 	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&id, "id", id, "management account id")
 	cmd.Flags().StringVar(&month, "month", time.Now().UTC().Format("200601"), "import month (UTC), fmt: yyyymm")
+	return cmd
+}
+
+func AwsPayerCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "awspayer",
+		Short: "Query an AWS management account's CUR import history",
+		Long:  `Query an AWS management account's CUR import history.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			logger.Info("see -h for more information")
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.AddCommand(
+		CurImportHistoryCmd(),
+	)
+
 	return cmd
 }
