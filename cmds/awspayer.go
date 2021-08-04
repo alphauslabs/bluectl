@@ -94,11 +94,7 @@ func ListPayersCmd() *cobra.Command {
 						wf.Write(row)
 					}
 				}
-
-				fallthrough
 			case params.OutFmt == "json":
-				logger.SetPrefix(logger.PrefixNone)
-
 				for {
 					v, err := stream.Recv()
 					if err == io.EOF {
@@ -310,6 +306,8 @@ func CurImportHistoryCmd() *cobra.Command {
 				return
 			}
 
+			hdrs := []string{"PAYER", "MONTH", "TIMESTAMP"}
+
 			switch {
 			case params.OutFile != "" && params.OutFmt == "csv":
 				if params.OutFile != "" {
@@ -327,15 +325,15 @@ func CurImportHistoryCmd() *cobra.Command {
 						f.Close()
 					}()
 
-					wf.Write([]string{"payer", "month", "timestamps"})
+					wf.Write(hdrs)
 					for _, v := range resp.Timestamps {
-						wf.Write([]string{resp.Id, resp.Month, v})
+						row := []string{resp.Id, resp.Month, v}
+						logger.Infof("%v --> %v", row, params.OutFile)
+						wf.Write(row)
 					}
 				}
-				fallthrough
 			case params.OutFmt == "json":
 				b, _ := json.Marshal(resp)
-				logger.SetPrefix(logger.PrefixNone)
 				logger.Info(string(b))
 			default:
 				table := tablewriter.NewWriter(os.Stdout)
@@ -343,17 +341,15 @@ func CurImportHistoryCmd() *cobra.Command {
 				table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
 				table.SetAlignment(tablewriter.ALIGN_LEFT)
 				table.SetColWidth(100)
-				table.SetHeader([]string{"payer", "month", "timestamps"})
+				table.SetBorder(false)
+				table.SetHeaderLine(false)
+				table.SetColumnSeparator("")
+				table.SetTablePadding("  ")
+				table.SetNoWhiteSpace(true)
+				table.SetHeader(hdrs)
 
-				for i, v := range resp.Timestamps {
-					var rows []string
-					if i == 0 {
-						rows = []string{resp.Id, resp.Month, v}
-					} else {
-						rows = []string{"", "", v}
-					}
-
-					table.Append(rows)
+				for _, v := range resp.Timestamps {
+					table.Append([]string{resp.Id, resp.Month, v})
 				}
 
 				table.Render()
