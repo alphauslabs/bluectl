@@ -8,8 +8,8 @@ import (
 func IamUsersCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iamuser",
-		Short: "Get my information as a user",
-		Long:  `Get my information as a user.`,
+		Short: "Subcommand for IAM user-related operations",
+		Long:  `Subcommand for IAM user-related operations.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			logger.Info("see -h for more information")
 		},
