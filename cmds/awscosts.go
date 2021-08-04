@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/alphauslabs/blue-sdk-go/api"
@@ -15,6 +17,7 @@ import (
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/bluectl/pkg/ops"
 	"github.com/spf13/cobra"
 )
 
@@ -529,6 +532,50 @@ func AwsCalculateCostsCmd() *cobra.Command {
 
 			b, _ := json.Marshal(resp)
 			logger.Info(string(b))
+
+			if wait {
+				quit, cancel := context.WithCancel(context.Background())
+				done := make(chan struct{}, 1)
+
+				// Interrupt handler.
+				go func() {
+					sigch := make(chan os.Signal)
+					signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
+					<-sigch
+					cancel()
+				}()
+
+				go func() {
+					for {
+						q := context.WithValue(quit, struct{}{}, nil)
+						op, err := ops.WaitForOperation(q, ops.WaitForOperationInput{
+							Name: resp.Name,
+						})
+
+						if err != nil {
+							logger.Error(err)
+							done <- struct{}{}
+							return
+						}
+
+						if op != nil {
+							if op.Done {
+								logger.Infof("[%v] done", resp.Name)
+								done <- struct{}{}
+								return
+							}
+						}
+					}
+				}()
+
+				logger.Infof("wait for [%v], this could take some time...", resp.Name)
+
+				select {
+				case <-done:
+				case <-quit.Done():
+					logger.Info("interrupted")
+				}
+			}
 		},
 	}
 
