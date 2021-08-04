@@ -462,6 +462,7 @@ it should be a billing group id.`,
 func AwsCalculateCostsCmd() *cobra.Command {
 	var (
 		rawInput string
+		wait     bool
 	)
 
 	cmd := &cobra.Command{
@@ -533,6 +534,7 @@ func AwsCalculateCostsCmd() *cobra.Command {
 
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_CalculateCosts")
+	cmd.Flags().BoolVar(&wait, "wait", wait, "if true, wait for the operation to finish")
 	return cmd
 }
 

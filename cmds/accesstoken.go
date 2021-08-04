@@ -2,10 +2,11 @@ package cmds
 
 import (
 	"fmt"
-	"log"
+	"os"
 
 	"github.com/alphauslabs/blue-sdk-go/session"
 	"github.com/alphauslabs/bluectl/params"
+	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +49,8 @@ func AccessTokenCmd() *cobra.Command {
 			// Get actual access token.
 			token, err := s.AccessToken()
 			if err != nil {
-				log.Fatalln(err)
+				logger.Error(err)
+				os.Exit(1)
 			}
 
 			fmt.Print(token)

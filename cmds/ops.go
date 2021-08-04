@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/blue-sdk-go/operations/v1"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/bluectl/pkg/ops"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -41,13 +45,13 @@ func OpsListCmd() *cobra.Command {
 			ctx := context.Background()
 			mycon, err := grpcconn.GetConnection(ctx, grpcconn.OpsService)
 			if err != nil {
-				logger.Error(err)
+				fnerr(err)
 				return
 			}
 
 			client, err := operations.NewClient(ctx, &operations.ClientOptions{Conn: mycon})
 			if err != nil {
-				logger.Error(err)
+				fnerr(err)
 				return
 			}
 
@@ -122,15 +126,15 @@ func OpsGetCmd() *cobra.Command {
 			}
 
 			ctx := context.Background()
-			mycon, err := grpcconn.GetConnection(ctx, "blue")
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.OpsService)
 			if err != nil {
-				logger.Error(err)
+				fnerr(err)
 				return
 			}
 
 			client, err := operations.NewClient(ctx, &operations.ClientOptions{Conn: mycon})
 			if err != nil {
-				logger.Error(err)
+				fnerr(err)
 				return
 			}
 
@@ -140,7 +144,7 @@ func OpsGetCmd() *cobra.Command {
 			})
 
 			if err != nil {
-				logger.Error(err)
+				fnerr(err)
 				return
 			}
 
@@ -167,6 +171,81 @@ func OpsGetCmd() *cobra.Command {
 	return cmd
 }
 
+func OpsWaitCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "wait <name>",
+		Short: "Wait for a long-running operation to finish",
+		Long:  `Wait for a long-running operation to finish.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			defer func(begin time.Time) {
+				logger.Info("duration:", time.Since(begin))
+			}(time.Now())
+
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			if len(args) == 0 {
+				fnerr(fmt.Errorf("<name> cannot be empty"))
+				return
+			}
+
+			quit, cancel := context.WithCancel(context.Background())
+			done := make(chan struct{}, 1)
+
+			// Interrupt handler.
+			go func() {
+				sigch := make(chan os.Signal)
+				signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
+				<-sigch
+				cancel()
+			}()
+
+			go func() {
+				for {
+					q := context.WithValue(quit, struct{}{}, nil)
+					op, err := ops.WaitForOperation(q, ops.WaitForOperationInput{
+						Name: args[0],
+					})
+
+					if err != nil {
+						logger.Error(err)
+						done <- struct{}{}
+						return
+					}
+
+					if op != nil {
+						if op.Done {
+							logger.Infof("[%v] done", args[0])
+							done <- struct{}{}
+							return
+						}
+					}
+				}
+			}()
+
+			logger.Infof("wait for [%v], this could take some time...", args[0])
+
+			select {
+			case <-done:
+			case <-quit.Done():
+				logger.Info("interrupted")
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	return cmd
+}
+
 func OpsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ops",
@@ -181,6 +260,7 @@ func OpsCmd() *cobra.Command {
 	cmd.AddCommand(
 		OpsListCmd(),
 		OpsGetCmd(),
+		OpsWaitCmd(),
 	)
 
 	return cmd
