@@ -7,12 +7,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/blue-sdk-go/cost/v1"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/bluectl/pkg/ops"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -362,6 +366,135 @@ func CurImportHistoryCmd() *cobra.Command {
 	return cmd
 }
 
+func ImportCursCmd() *cobra.Command {
+	var (
+		rawInput string
+		month    string
+		wait     bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "import-curs [id1[,id2,id...]]",
+		Short: "Trigger an ondemand import of all (or input) CUR files",
+		Long:  `Trigger an ondemand import of all (or input) CUR files.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			ctx := context.Background()
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.CostService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := cost.NewClient(ctx, &cost.ClientOptions{Conn: mycon})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			var resp *api.Operation
+
+			switch {
+			case rawInput != "":
+				var in cost.ImportCurFilesRequest
+				err := json.Unmarshal([]byte(rawInput), &in)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				resp, err = client.ImportCurFiles(ctx, &in)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+			default:
+				in := cost.ImportCurFilesRequest{}
+				if len(args) > 0 {
+					in.Filter = args[0]
+				}
+
+				resp, err = client.ImportCurFiles(ctx, &in)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+			}
+
+			b, _ := json.Marshal(resp)
+			logger.Info(string(b))
+
+			if wait {
+				func() {
+					defer func(begin time.Time) {
+						logger.Info("duration:", time.Since(begin))
+					}(time.Now())
+
+					quit, cancel := context.WithCancel(context.Background())
+					done := make(chan struct{}, 1)
+
+					// Interrupt handler.
+					go func() {
+						sigch := make(chan os.Signal)
+						signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
+						<-sigch
+						cancel()
+					}()
+
+					go func() {
+						for {
+							q := context.WithValue(quit, struct{}{}, nil)
+							op, err := ops.WaitForOperation(q, ops.WaitForOperationInput{
+								Name: resp.Name,
+							})
+
+							if err != nil {
+								logger.Error(err)
+								done <- struct{}{}
+								return
+							}
+
+							if op != nil {
+								if op.Done {
+									logger.Infof("[%v] done", resp.Name)
+									done <- struct{}{}
+									return
+								}
+							}
+						}
+					}()
+
+					logger.Infof("wait for [%v], this could take some time...", resp.Name)
+
+					select {
+					case <-done:
+					case <-quit.Done():
+						logger.Info("interrupted")
+					}
+				}()
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ImportCurFiles")
+	cmd.Flags().StringVar(&month, "month", time.Now().UTC().Format("200601"), "import month (UTC), fmt: yyyymm")
+	cmd.Flags().BoolVar(&wait, "wait", wait, "if true, wait for the operation to finish")
+	return cmd
+}
+
 func AwsPayerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "awspayer",
@@ -377,6 +510,7 @@ func AwsPayerCmd() *cobra.Command {
 		ListPayersCmd(),
 		GetPayerCmd(),
 		CurImportHistoryCmd(),
+		ImportCursCmd(),
 	)
 
 	return cmd

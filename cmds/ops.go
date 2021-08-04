@@ -5,19 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/blue-sdk-go/operations/v1"
+	"github.com/alphauslabs/blue-sdk-go/session"
+	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/alphauslabs/bluectl/pkg/ops"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func OpsListCmd() *cobra.Command {
@@ -125,44 +126,74 @@ func OpsGetCmd() *cobra.Command {
 				return
 			}
 
-			ctx := context.Background()
-			mycon, err := grpcconn.GetConnection(ctx, grpcconn.OpsService)
-			if err != nil {
-				fnerr(err)
-				return
-			}
+			switch {
+			case params.OutFmt == "json":
+				// TODO: Support for accessing beta (next) environment.
+				s := session.New(
+					session.WithClientId(params.ClientId),
+					session.WithClientSecret(params.ClientSecret),
+				)
 
-			client, err := operations.NewClient(ctx, &operations.ClientOptions{Conn: mycon})
-			if err != nil {
-				fnerr(err)
-				return
-			}
+				t, err := s.AccessToken()
+				if err != nil {
+					fnerr(err)
+					return
+				}
 
-			defer client.Close()
-			resp, err := client.GetOperation(ctx, &operations.GetOperationRequest{
-				Name: args[0],
-			})
+				// Simpler to get the raw JSON this way.
+				hc := &http.Client{Timeout: 60 * time.Second}
+				u := fmt.Sprintf("https://api.alphaus.cloud/m/blue/ops/v1/%v", args[0])
+				r, err := http.NewRequest(http.MethodGet, u, nil)
+				if err != nil {
+					fnerr(err)
+					return
+				}
 
-			if err != nil {
-				fnerr(err)
-				return
-			}
+				r.Header.Add("Authorization", "Bearer "+t)
+				resp, err := hc.Do(r)
+				if err != nil {
+					fnerr(err)
+					return
+				}
 
-			logger.Info("name:", resp.Name)
-			var meta api.OperationAwsCalculateCostsMetadataV1
-			anypb.UnmarshalTo(resp.Metadata, &meta, proto.UnmarshalOptions{})
-			sm, _ := json.Marshal(meta)
-			logger.Info("metadata:", string(sm))
-			logger.Info("done:", resp.Done)
-			if v, ok := resp.Result.(*api.Operation_Response); ok {
-				var r api.KeyValue
-				anypb.UnmarshalTo(v.Response, &r, proto.UnmarshalOptions{})
-				sr, _ := json.Marshal(r)
-				logger.Info("response:", string(sr))
-			}
+				if (resp.StatusCode / 100) != 2 {
+					fnerr(fmt.Errorf(resp.Status))
+					return
+				}
 
-			if v, ok := resp.Result.(*api.Operation_Error); ok {
-				logger.Info("error:", v)
+				defer resp.Body.Close()
+				body, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				logger.Info(string(body))
+			default:
+				ctx := context.Background()
+				mycon, err := grpcconn.GetConnection(ctx, grpcconn.OpsService)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				client, err := operations.NewClient(ctx, &operations.ClientOptions{Conn: mycon})
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				defer client.Close()
+				resp, err := client.GetOperation(ctx, &operations.GetOperationRequest{
+					Name: args[0],
+				})
+
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				logger.Info(resp)
 			}
 		},
 	}
