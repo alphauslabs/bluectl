@@ -17,8 +17,9 @@ var (
 		Short: "Command line interface for Alphaus services",
 		Long: `Command line interface for Alphaus services.
 
-The general form is bluectl <resource[ subresource...]> <action> [flags]. Due to Blue API still in beta stage,
-most commands support the --raw-input flag to be always in sync with the current feature set of the API. See
+The general form is bluectl <resource[ subresource...]> <action> [flags]. Most commands support the --raw-input
+flag to be always in sync with the current feature set of the API in case the built-in flags don't support all
+the possible input combinations. For beta APIs, we recommend you to use the --raw-input flag. See
 https://alphauslabs.github.io/blueapidocs/ for the latest API reference.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if params.CleanOut {
@@ -50,6 +51,7 @@ func init() {
 }
 
 func main() {
+	cobra.EnableCommandSorting = false
 	log.SetOutput(os.Stdout)
 	rootCmd.Execute()
 }

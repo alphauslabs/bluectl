@@ -274,20 +274,18 @@ Note that this will invalidate all the other flags.`,
 func AwsGetAdjustmentsCmd() *cobra.Command {
 	var (
 		rawInput string
+		id       string
 		start    string
 		end      string
 		costtype string
 	)
 
 	cmd := &cobra.Command{
-		Use:   "get-adjustments [id]",
+		Use:   "get-adjustments",
 		Short: "Read AWS adjustment costs",
 		Long: `Read AWS adjustment costs. At the moment, we recommend you to use the --raw-input flag to take advantage
 of the API's full features described in https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadAdjustments.
-Note that this will invalidate all the other flags.
-
-Otherwise, if --type is 'all', [id] is discarded. If 'account', it should be an AWS account id. If 'billinggroup',
-it should be a billing group id.`,
+Note that this will invalidate all the other flags.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -384,6 +382,10 @@ it should be a billing group id.`,
 					return
 				}
 
+				if in.Vendor == "" {
+					in.Vendor = "aws"
+				}
+
 				stream, err = client.ReadAdjustments(ctx, &in)
 				if err != nil {
 					fnerr(err)
@@ -391,8 +393,8 @@ it should be a billing group id.`,
 				}
 			default:
 				if costtype != "all" {
-					if len(args) == 0 {
-						fnerr(fmt.Errorf("id is required"))
+					if id == "" {
+						fnerr(fmt.Errorf("--id is required"))
 						return
 					}
 				}
@@ -422,9 +424,9 @@ it should be a billing group id.`,
 
 				switch costtype {
 				case "account":
-					in.AccountId = args[0]
+					in.AccountId = id
 				case "billinggroup":
-					in.BillingInternalId = args[0]
+					in.BillingInternalId = id
 				default:
 					fnerr(fmt.Errorf("type unsupported: %v", costtype))
 					return
@@ -459,6 +461,7 @@ it should be a billing group id.`,
 
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadAdjustments")
+	cmd.Flags().StringVar(&id, "id", id, "account id or billing group id, depending on --type, skipped if 'all'")
 	cmd.Flags().StringVar(&costtype, "type", "account", "type of cost to stream: all, account, billinggroup")
 	cmd.Flags().StringVar(&start, "start", time.Now().UTC().Format("200601")+"01", "yyyymmdd: start date to stream data; default: first day of the current month (UTC)")
 	cmd.Flags().StringVar(&end, "end", time.Now().UTC().Format("20060102"), "yyyymmdd: end date to stream data; default: current date (UTC)")
