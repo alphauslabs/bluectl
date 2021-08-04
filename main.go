@@ -39,8 +39,7 @@ func init() {
 	rootCmd.AddCommand(
 		cmds.WhoAmICmd(),
 		cmds.AccessTokenCmd(),
-		cmds.AwsCostCmd(),
-		cmds.AwsFeesCmd(),
+		cmds.AwsCostsCmd(),
 		cmds.CurImportHistoryCmd(),
 		cmds.OpsCmd(),
 	)

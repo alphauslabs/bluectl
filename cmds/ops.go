@@ -39,7 +39,7 @@ func OpsListCmd() *cobra.Command {
 			}
 
 			ctx := context.Background()
-			mycon, err := grpcconn.GetConnection(ctx, "blue")
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.OpsService)
 			if err != nil {
 				logger.Error(err)
 				return

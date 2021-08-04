@@ -22,7 +22,7 @@ func CurImportHistoryCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "aws-curhistory <id>",
+		Use:   "curhistory <id>",
 		Short: "Query an AWS management account's CUR import history",
 		Long:  `Query an AWS management account's CUR import history.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -44,7 +44,7 @@ func CurImportHistoryCmd() *cobra.Command {
 			}
 
 			ctx := context.Background()
-			mycon, err := grpcconn.GetConnection(ctx, "cost")
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.CostService)
 			if err != nil {
 				fnerr(err)
 				return

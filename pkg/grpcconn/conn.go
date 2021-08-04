@@ -9,6 +9,17 @@ import (
 	"github.com/alphauslabs/bluectl/params"
 )
 
+const (
+	bluesvc = "blue"
+
+	OrgService     = bluesvc
+	IamService     = bluesvc
+	CostService    = "cost"
+	BillingService = "billing"
+	OpsService     = bluesvc
+	PrefsService   = bluesvc
+)
+
 func GetConnection(ctx context.Context, svcname string) (*conn.GrpcClientConn, error) {
 	sess := session.New(
 		session.WithLoginUrl(params.AuthUrl),

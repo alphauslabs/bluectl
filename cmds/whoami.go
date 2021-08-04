@@ -17,7 +17,7 @@ func WhoAmICmd() *cobra.Command {
 		Long:  `Get my information as a user.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := context.Background()
-			mycon, err := grpcconn.GetConnection(ctx, "blue")
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.IamService)
 			if err != nil {
 				logger.Error(err)
 				return
