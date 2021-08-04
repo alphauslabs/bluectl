@@ -9,7 +9,7 @@ $ brew tap alphauslabs/tap # only once
 $ brew install bluectl
 ```
 
-To setup the environment variables required for authentication, check out [blue-sdk-go](https://github.com/alphauslabs/blue-sdk-go).
+To setup the environment variables required for authentication, check out this [page](https://alphauslabs.github.io/blueapi/authentication/apikey.html).
 
 You can also use the `--client-id` and `--client-secret` flags to set the values explicitly.
 
