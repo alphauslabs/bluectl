@@ -9,15 +9,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/blue-sdk-go/cost/v1"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func ListPayersCmd() *cobra.Command {
@@ -219,16 +216,14 @@ func GetPayerCmd() *cobra.Command {
 					}()
 
 					wf.Write(hdrs)
-					var meta api.AccountMetadataV1
-					anypb.UnmarshalTo(resp.Metadata, &meta, proto.UnmarshalOptions{})
-					for _, v := range meta.Kv {
+					for _, v := range resp.Metadata {
 						m := fmt.Sprintf("%v: %v", v.Key, v.Value)
 						wf.Write([]string{resp.Id, resp.Name, m})
 					}
 				}
 			case params.OutFmt == "json":
-				fnerr(fmt.Errorf("fmt:json is not supported yet"))
-				return
+				b, _ := json.Marshal(resp)
+				logger.Info(string(b))
 			default:
 				table := tablewriter.NewWriter(os.Stdout)
 				table.SetAutoFormatHeaders(false)
@@ -242,9 +237,7 @@ func GetPayerCmd() *cobra.Command {
 				table.SetNoWhiteSpace(true)
 				table.SetHeader(hdrs)
 
-				var meta api.AccountMetadataV1
-				anypb.UnmarshalTo(resp.Metadata, &meta, proto.UnmarshalOptions{})
-				for _, v := range meta.Kv {
+				for _, v := range resp.Metadata {
 					m := fmt.Sprintf("%v: %v", v.Key, v.Value)
 					table.Append([]string{resp.Id, resp.Name, m})
 				}
