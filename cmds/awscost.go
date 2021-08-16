@@ -300,7 +300,13 @@ Note that this will invalidate all the other flags.`,
 			}
 
 			ctx := context.Background()
-			client, err := cost.NewClient(ctx)
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.CostService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := cost.NewClient(ctx, &cost.ClientOptions{Conn: mycon})
 			if err != nil {
 				fnerr(err)
 				return
