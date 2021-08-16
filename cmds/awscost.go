@@ -432,7 +432,7 @@ Note that this will invalidate all the other flags.`,
 				case "account":
 					in.AccountId = id
 				case "billinggroup":
-					in.BillingInternalId = id
+					in.GroupId = id
 				default:
 					fnerr(fmt.Errorf("type unsupported: %v", costtype))
 					return

@@ -44,6 +44,8 @@ github.com/alphauslabs/blue-sdk-go v0.35.22 h1:7cl9C+k+rnaTwVf30zzLoNhHD1u196cR4
 github.com/alphauslabs/blue-sdk-go v0.35.22/go.mod h1:+tQYs/ntISElWv2zARemWOz50cRzUhgw/pBVtbhWlSg=
 github.com/alphauslabs/blue-sdk-go v0.35.23 h1:UVHbXZlyu6NmxRVYfI0ZfBNIfONTrJb0xNu8p6k8vcQ=
 github.com/alphauslabs/blue-sdk-go v0.35.23/go.mod h1:+tQYs/ntISElWv2zARemWOz50cRzUhgw/pBVtbhWlSg=
+github.com/alphauslabs/blue-sdk-go v0.35.24 h1:yAHdTlM4Qm7PLc+FpwH3aW7Ccpv1ZF4m10/1xr9AUtg=
+github.com/alphauslabs/blue-sdk-go v0.35.24/go.mod h1:+tQYs/ntISElWv2zARemWOz50cRzUhgw/pBVtbhWlSg=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
