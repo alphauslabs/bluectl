@@ -8,14 +8,18 @@ import (
 	"github.com/alphauslabs/bluectl/cmds"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
 var (
+	bold = color.New(color.Bold).SprintFunc()
+
 	rootCmd = &cobra.Command{
 		Use:   "bluectl",
-		Short: "Command line interface for Alphaus services",
-		Long: `Command line interface for Alphaus services.
+		Short: bold("bluectl") + " - Command line interface for Alphaus services",
+		Long: bold("bluectl") + ` - Command line interface for Alphaus services.
+Copyright (c) 2021 Alphaus Cloud, Inc. All rights reserved.
 
 The general form is bluectl <resource[ subresource...]> <action> [flags]. Most commands support the --raw-input
 flag to be always in sync with the current feature set of the API in case the built-in flags don't support all
