@@ -50,6 +50,7 @@ func init() {
 		cmds.WhoAmICmd(),
 		cmds.IamUsersCmd(),
 		cmds.AwsCostCmd(),
+		cmds.AwsTagsCmd(),
 		cmds.AwsPayerCmd(),
 		cmds.OpsCmd(),
 	)
