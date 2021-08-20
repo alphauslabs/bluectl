@@ -3,7 +3,7 @@ module github.com/alphauslabs/bluectl
 go 1.15
 
 require (
-	github.com/alphauslabs/blue-sdk-go v0.35.26
+	github.com/alphauslabs/blue-sdk-go v0.35.27
 	github.com/fatih/color v1.12.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.5.0 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
