@@ -253,7 +253,8 @@ func GetPayerCmd() *cobra.Command {
 
 func CurImportHistoryCmd() *cobra.Command {
 	var (
-		month string
+		rawInput string
+		month    string
 	)
 
 	cmd := &cobra.Command{
@@ -273,11 +274,6 @@ func CurImportHistoryCmd() *cobra.Command {
 				ret = 1
 			}
 
-			if len(args) == 0 {
-				fnerr(fmt.Errorf("id is required"))
-				return
-			}
-
 			ctx := context.Background()
 			mycon, err := grpcconn.GetConnection(ctx, grpcconn.CostService)
 			if err != nil {
@@ -292,76 +288,133 @@ func CurImportHistoryCmd() *cobra.Command {
 			}
 
 			defer client.Close()
-			mm, err := time.Parse("200601", month)
-			if err != nil {
-				fnerr(err)
-				return
-			}
-
-			in := cost.GetPayerAccountImportHistoryRequest{
-				Vendor: "aws",
-				Id:     args[0],
-				Month:  mm.Format("200601"),
-			}
-
-			resp, err := client.GetPayerAccountImportHistory(ctx, &in)
-			if err != nil {
-				fnerr(err)
-				return
-			}
-
+			var f *os.File
+			var wf *csv.Writer
 			hdrs := []string{"PAYER", "MONTH", "TIMESTAMP"}
+			var stream cost.Cost_GetPayerAccountImportHistoryClient
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetAutoFormatHeaders(false)
+			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetColWidth(100)
+			table.SetBorder(false)
+			table.SetHeaderLine(false)
+			table.SetColumnSeparator("")
+			table.SetTablePadding("  ")
+			table.SetNoWhiteSpace(true)
+			table.SetHeader(hdrs)
+			var render bool
+
+			if params.OutFile != "" {
+				f, err = os.Create(params.OutFile)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				wf = csv.NewWriter(f)
+				defer func() {
+					wf.Flush()
+					f.Close()
+				}()
+
+				switch params.OutFmt {
+				case "csv":
+					wf.Write(hdrs)
+				case "json":
+				default:
+					fnerr(fmt.Errorf("unsupported output format"))
+					return
+				}
+			}
 
 			switch {
-			case params.OutFile != "" && params.OutFmt == "csv":
-				if params.OutFile != "" {
-					var f *os.File
-					var wf *csv.Writer
-					f, err = os.Create(params.OutFile)
-					if err != nil {
-						fnerr(err)
-						return
-					}
-
-					wf = csv.NewWriter(f)
-					defer func() {
-						wf.Flush()
-						f.Close()
-					}()
-
-					wf.Write(hdrs)
-					for _, v := range resp.Timestamps {
-						row := []string{resp.Id, resp.Month, v}
-						logger.Infof("%v --> %v", row, params.OutFile)
-						wf.Write(row)
-					}
+			case rawInput != "":
+				var in cost.GetPayerAccountImportHistoryRequest
+				err := json.Unmarshal([]byte(rawInput), &in)
+				if err != nil {
+					fnerr(err)
+					return
 				}
-			case params.OutFmt == "json":
-				b, _ := json.Marshal(resp)
-				logger.Info(string(b))
+
+				if in.Vendor == "" {
+					in.Vendor = "aws"
+				}
+
+				stream, err = client.GetPayerAccountImportHistory(ctx, &in)
+				if err != nil {
+					fnerr(err)
+					return
+				}
 			default:
-				table := tablewriter.NewWriter(os.Stdout)
-				table.SetAutoFormatHeaders(false)
-				table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-				table.SetAlignment(tablewriter.ALIGN_LEFT)
-				table.SetColWidth(100)
-				table.SetBorder(false)
-				table.SetHeaderLine(false)
-				table.SetColumnSeparator("")
-				table.SetTablePadding("  ")
-				table.SetNoWhiteSpace(true)
-				table.SetHeader(hdrs)
-
-				for _, v := range resp.Timestamps {
-					table.Append([]string{resp.Id, resp.Month, v})
+				if len(args) == 0 {
+					fnerr(fmt.Errorf("id is required"))
+					return
 				}
 
+				mm, err := time.Parse("200601", month)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				in := cost.GetPayerAccountImportHistoryRequest{
+					Vendor: "aws",
+					Id:     args[0],
+					Month:  mm.Format("200601"),
+				}
+
+				stream, err = client.GetPayerAccountImportHistory(ctx, &in)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+			}
+
+			fnWrite := func(v *cost.GetPayerAccountImportHistoryResponse) {
+				switch {
+				case params.OutFile != "" && params.OutFmt == "csv":
+					for _, t := range v.Timestamps {
+						wf.Write([]string{v.Id, v.Month, t})
+					}
+				case params.OutFmt == "json":
+					b, _ := json.Marshal(v)
+					fmt.Println(string(b))
+				default:
+					render = true
+					for _, t := range v.Timestamps {
+						table.Append([]string{v.Id, v.Month, t})
+					}
+				}
+			}
+
+			for {
+				v, err := stream.Recv()
+				if err == io.EOF {
+					break
+				}
+
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				fnWrite(v)
+			}
+
+			if render {
 				table.Render()
+			}
+
+			if params.OutFile != "" {
+				logger.Infof("data written to %v in %v format", params.OutFile, params.OutFmt)
 			}
 		},
 	}
 
 	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_GetPayerAccountImportHistory")
 	cmd.Flags().StringVar(&month, "month", time.Now().UTC().Format("200601"), "import month (UTC), fmt: yyyymm")
 	return cmd
 }
