@@ -74,7 +74,7 @@ Note that this will invalidate all the other flags.`,
 				switch params.OutFmt {
 				case "csv":
 					wf.Write([]string{
-						"billingGroupId",
+						"groupId",
 						"account",
 						"date",
 						"productCode",
@@ -121,7 +121,7 @@ Note that this will invalidate all the other flags.`,
 					switch params.OutFmt {
 					case "csv":
 						wf.Write([]string{
-							v.BillingGroupId,
+							v.GroupId,
 							v.Account,
 							v.Date,
 							v.ProductCode,
@@ -259,7 +259,7 @@ Note that this will invalidate all the other flags.`,
 				switch params.OutFmt {
 				case "csv":
 					wf.Write([]string{
-						"billingGroupId",
+						"groupId",
 						"account",
 						"date",
 						"productCode",
@@ -297,7 +297,7 @@ Note that this will invalidate all the other flags.`,
 					switch params.OutFmt {
 					case "csv":
 						wf.Write([]string{
-							v.BillingGroupId,
+							v.GroupId,
 							v.Account,
 							v.Date,
 							v.ProductCode,
