@@ -27,9 +27,9 @@ func GetConnection(ctx context.Context, svcname string) (*conn.GrpcClientConn, e
 		session.WithClientSecret(params.ClientSecret),
 	)
 
-	tgt := session.BlueEndpoint
+	tgt := conn.BlueEndpoint
 	if strings.Contains(params.AuthUrl, "next") {
-		tgt = session.BlueEndpointNext
+		tgt = conn.BlueEndpointNext
 	}
 
 	return conn.New(ctx,
