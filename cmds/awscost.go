@@ -351,7 +351,7 @@ Note that this will invalidate all the other flags.`,
 				}
 			}
 
-			fnWriteFile := func(v *awstypes.Adjustment) {
+			fnWriteFile := func(v *awstypes.Cost) {
 				b, _ := json.Marshal(v)
 				fmt.Println(string(b))
 				if params.OutFile != "" {
