@@ -2,7 +2,7 @@
 
 `bluectl` is the official command line interface for Alphaus services.
 
-To install using [brew](https://brew.sh/), run the following command:
+To install using [brew](https://brew.sh/) (Linux, MacOS, Windows via WSL/2), run the following command:
 
 ```bash
 $ brew install alphauslabs/tap/bluectl
