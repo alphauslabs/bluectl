@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -18,7 +19,10 @@ import (
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/alphauslabs/bluectl/pkg/ops"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func AwsGetCostsCmd() *cobra.Command {
@@ -602,6 +606,193 @@ func AwsCalculateCostsCmd() *cobra.Command {
 	return cmd
 }
 
+func AwsGetCalculationHistoryCmd() *cobra.Command {
+	var (
+		rawInput string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "get-calchistory",
+		Short: "Query AWS invoice calculation history",
+		Long:  `Query AWS invoice calculation history.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			ctx := context.Background()
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.CostService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := cost.NewClient(ctx, &cost.ClientOptions{Conn: mycon})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			var f *os.File
+			var wf *csv.Writer
+			hdrs := []string{"NAME", "MONTH", "GROUPS", "UPDATED", "CREATED", "STATUS", "DONE", "RESULT"}
+			var resp *cost.ListCalculationsHistoryResponse
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetAutoFormatHeaders(false)
+			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetColWidth(100)
+			table.SetBorder(false)
+			table.SetHeaderLine(false)
+			table.SetColumnSeparator("")
+			table.SetTablePadding("  ")
+			table.SetNoWhiteSpace(true)
+			table.SetHeader(hdrs)
+			var render bool
+
+			if params.OutFile != "" {
+				f, err = os.Create(params.OutFile)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				wf = csv.NewWriter(f)
+				defer func() {
+					wf.Flush()
+					f.Close()
+				}()
+
+				switch params.OutFmt {
+				case "csv":
+					wf.Write(hdrs)
+				case "json":
+				default:
+					fnerr(fmt.Errorf("unsupported output format"))
+					return
+				}
+			}
+
+			switch {
+			case rawInput != "":
+				var in cost.ListCalculationsHistoryRequest
+				err := json.Unmarshal([]byte(rawInput), &in)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				if in.Vendor == "" {
+					in.Vendor = "aws"
+				}
+
+				resp, err = client.ListCalculationsHistory(ctx, &in)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+			default:
+				resp, err = client.ListCalculationsHistory(ctx, &cost.ListCalculationsHistoryRequest{
+					Vendor: "aws",
+				})
+
+				if err != nil {
+					fnerr(err)
+					return
+				}
+			}
+
+			for _, op := range resp.Aws.Operations {
+				var meta api.OperationAwsCalculateCostsMetadataV1
+				anypb.UnmarshalTo(op.Metadata, &meta, proto.UnmarshalOptions{})
+				var result string
+				switch op.Result.(type) {
+				case *api.Operation_Response:
+					var res api.KeyValue
+					tres := op.Result.(*api.Operation_Response)
+					anypb.UnmarshalTo(tres.Response, &res, proto.UnmarshalOptions{})
+					result = fmt.Sprintf("%v", res.Value)
+				case *api.Operation_Error:
+					terr := op.Result.(*api.Operation_Error)
+					result = terr.Error.String()
+				}
+
+				switch {
+				case params.OutFmt == "csv" && params.OutFile != "":
+					wf.Write([]string{
+						op.Name,
+						meta.Month,
+						strings.Join(meta.GroupIds, ","),
+						meta.Updated,
+						meta.Created,
+						meta.Status,
+						fmt.Sprintf("%v", op.Done),
+						result,
+					})
+				case params.OutFmt == "json":
+					var m map[string]interface{}
+					b, _ := json.Marshal(op)
+					json.Unmarshal(b, &m)
+
+					// Make metadata more readable.
+					v := m["metadata"]
+					vv := v.(map[string]interface{})
+					vv["value"] = meta
+
+					// Make result more readable.
+					switch op.Result.(type) {
+					case *api.Operation_Response:
+						var res api.KeyValue
+						tres := op.Result.(*api.Operation_Response)
+						anypb.UnmarshalTo(tres.Response, &res, proto.UnmarshalOptions{})
+						v := m["Result"]
+						vv := v.(map[string]interface{})
+						vvv := vv["Response"].(map[string]interface{})
+						vvv["value"] = res
+					}
+
+					b, _ = json.Marshal(m)
+					fmt.Println(string(b))
+				default:
+					render = true
+					table.Append([]string{
+						op.Name,
+						meta.Month,
+						strings.Join(meta.GroupIds, ","),
+						meta.Updated,
+						meta.Created,
+						meta.Status,
+						fmt.Sprintf("%v", op.Done),
+						result,
+					})
+				}
+			}
+
+			if render {
+				table.Render()
+			}
+
+			if params.OutFile != "" {
+				logger.Infof("data written to %v in %v format", params.OutFile, params.OutFmt)
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ListCalculationsHistory")
+	return cmd
+}
+
 func AwsCostCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "awscost [id]",
@@ -617,6 +808,7 @@ func AwsCostCmd() *cobra.Command {
 		AwsGetCostsCmd(),
 		AwsGetAdjustmentsCmd(),
 		AwsCalculateCostsCmd(),
+		AwsGetCalculationHistoryCmd(),
 	)
 
 	return cmd
