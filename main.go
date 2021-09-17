@@ -53,6 +53,7 @@ func init() {
 		cmds.AwsTagsCmd(),
 		cmds.AwsPayerCmd(),
 		cmds.OpsCmd(),
+		cmds.KvCmd(),
 	)
 }
 

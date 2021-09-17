@@ -18,6 +18,7 @@ const (
 	BillingService = "billing"
 	OpsService     = bluesvc
 	PrefsService   = bluesvc
+	KvStoreService = "kvstore"
 )
 
 func GetConnection(ctx context.Context, svcname string) (*conn.GrpcClientConn, error) {
