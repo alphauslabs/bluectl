@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -52,6 +54,45 @@ For example, 'scan %pattern%'. Return all keys by default.`,
 
 			defer client.Close()
 			var stream kvstore.KvStore_ScanClient
+			var f *os.File
+			var wf *csv.Writer
+			hdrs := []string{"KEY", "VALUE"}
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetAutoFormatHeaders(false)
+			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetColWidth(100)
+			table.SetBorder(false)
+			table.SetHeaderLine(false)
+			table.SetColumnSeparator("")
+			table.SetTablePadding("  ")
+			table.SetNoWhiteSpace(true)
+			table.SetHeader(hdrs)
+			var render bool
+
+			if params.OutFile != "" {
+				f, err = os.Create(params.OutFile)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				wf = csv.NewWriter(f)
+				defer func() {
+					wf.Flush()
+					f.Close()
+				}()
+
+				switch params.OutFmt {
+				case "csv":
+					wf.Write(hdrs)
+				case "json":
+				default:
+					fnerr(fmt.Errorf("unsupported output format"))
+					return
+				}
+			}
 
 			switch {
 			case rawInput != "":
@@ -91,8 +132,24 @@ For example, 'scan %pattern%'. Return all keys by default.`,
 					return
 				}
 
-				b, _ := json.Marshal(v)
-				logger.Info(string(b))
+				switch {
+				case params.OutFile != "" && params.OutFmt == "csv":
+					wf.Write([]string{v.Key, v.Value})
+				case params.OutFmt == "json":
+					b, _ := json.Marshal(v)
+					fmt.Println(string(b))
+				default:
+					render = true
+					table.Append([]string{v.Key, v.Value})
+				}
+			}
+
+			if render {
+				table.Render()
+			}
+
+			if params.OutFile != "" {
+				logger.Infof("data written to %v in %v format", params.OutFile, params.OutFmt)
 			}
 		},
 	}
