@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/alphauslabs/blue-sdk-go/kvstore/v1"
@@ -249,7 +250,7 @@ func KvWriteCmd() *cobra.Command {
 			}
 
 			if fromFile != "" {
-				b, err := os.ReadFile(fromFile)
+				b, err := ioutil.ReadFile(fromFile)
 				if err != nil {
 					fnerr(err)
 					return
