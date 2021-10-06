@@ -10,6 +10,6 @@ $ brew install alphauslabs/tap/bluectl
 
 To setup the environment variables required for authentication, check out this [page](https://alphauslabs.github.io/blueapi/authentication/apikey.html).
 
-You can also use the `--client-id` and `--client-secret` flags to set the values explicitly.
+You can also use the `--client-id` and `--client-secret` flags to set the values explicitly. These will override your environment variables.
 
 Run `bluectl -h` or `bluectl <subcommand> -h` to know more about the available subcommands and flags.
