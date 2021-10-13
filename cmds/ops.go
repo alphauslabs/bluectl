@@ -277,6 +277,60 @@ func OpsWaitCmd() *cobra.Command {
 	return cmd
 }
 
+func OpsDelCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "rm <name>",
+		Short: "Delete a long-running operation",
+		Long:  `Delete a long-running operation.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			if len(args) == 0 {
+				fnerr(fmt.Errorf("<name> cannot be empty"))
+				return
+			}
+
+			ctx := context.Background()
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.OpsService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := operations.NewClient(ctx, &operations.ClientOptions{Conn: mycon})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			_, err = client.DeleteOperation(ctx, &operations.DeleteOperationRequest{
+				Name: args[0],
+			})
+
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			logger.Infof("deleted: %v", args[0])
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	return cmd
+}
+
 func OpsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ops",
@@ -292,6 +346,7 @@ func OpsCmd() *cobra.Command {
 		OpsListCmd(),
 		OpsGetCmd(),
 		OpsWaitCmd(),
+		OpsDelCmd(),
 	)
 
 	return cmd
