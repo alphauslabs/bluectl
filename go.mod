@@ -17,6 +17,8 @@ require (
 	google.golang.org/protobuf v1.27.1
 )
 
+require golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
+
 require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
