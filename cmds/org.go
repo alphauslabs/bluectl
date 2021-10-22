@@ -89,10 +89,6 @@ func OrgRegisterCmd() *cobra.Command {
 			entry["password"] = passwd
 			entry["description"] = desc
 			payload, _ := json.Marshal(entry)
-
-			logger.Info(string(payload))
-			return
-
 			r, err := http.NewRequest(http.MethodPost, u, bytes.NewBuffer(payload))
 			if err != nil {
 				fnerr(err)
