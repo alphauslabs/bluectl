@@ -111,7 +111,7 @@ func ListIdpsCmd() *cobra.Command {
 	return cmd
 }
 
-func CreateIdpsCmd() *cobra.Command {
+func CreateIdpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create <name> <path-to-metadata-file>",
 		Short: "Create a new IdP entry",
@@ -237,7 +237,7 @@ func IdpCmd() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	cmd.AddCommand(
 		ListIdpsCmd(),
-		CreateIdpsCmd(),
+		CreateIdpCmd(),
 		DelIdpCmd(),
 	)
 
