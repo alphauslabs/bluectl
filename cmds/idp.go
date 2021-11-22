@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/alphauslabs/blue-sdk-go/iam/v1"
@@ -110,6 +111,68 @@ func ListIdpsCmd() *cobra.Command {
 	return cmd
 }
 
+func CreateIdpsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "create <name> <path-to-metadata-file>",
+		Short: "Create a new IdP entry",
+		Long:  `Create a new IdP entry.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			if len(args) < 2 {
+				fnerr(fmt.Errorf("name and metadata file required"))
+				return
+			}
+
+			meta, err := ioutil.ReadFile(args[1])
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			ctx := context.Background()
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.IamService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := iam.NewClient(ctx, &iam.ClientOptions{Conn: mycon})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			_, err = client.CreateIdentityProvider(ctx, &iam.CreateIdentityProviderRequest{
+				Name:     args[0],
+				Type:     "saml",
+				Metadata: string(meta),
+			})
+
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			logger.Infof("IdP %v created.", args[0])
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	return cmd
+}
+
 func DelIdpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rm <id>",
@@ -147,64 +210,13 @@ func DelIdpCmd() *cobra.Command {
 			}
 
 			defer client.Close()
-			resp, err := client.GetUser(ctx, &iam.GetUserRequest{Id: args[0]})
+			_, err = client.DeleteIdentityProvider(ctx, &iam.DeleteIdentityProviderRequest{Id: args[0]})
 			if err != nil {
 				fnerr(err)
 				return
 			}
 
-			hdrs := []string{"ID", "PARENT", "METADATA"}
-
-			switch {
-			case params.OutFile != "" && params.OutFmt == "csv":
-				if params.OutFile != "" {
-					var f *os.File
-					var wf *csv.Writer
-					f, err = os.Create(params.OutFile)
-					if err != nil {
-						fnerr(err)
-						return
-					}
-
-					wf = csv.NewWriter(f)
-					defer func() {
-						wf.Flush()
-						f.Close()
-					}()
-
-					wf.Write(hdrs)
-					for k, v := range resp.Metadata {
-						m := fmt.Sprintf("%v: %v", k, v)
-						row := []string{resp.Id, resp.Parent, m}
-						logger.Infof("%v --> %v", row, params.OutFile)
-						wf.Write(row)
-					}
-				}
-			case params.OutFmt == "json":
-				b, _ := json.Marshal(resp)
-				logger.Info(string(b))
-			default:
-				table := tablewriter.NewWriter(os.Stdout)
-				table.SetAutoFormatHeaders(false)
-				table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-				table.SetAlignment(tablewriter.ALIGN_LEFT)
-				table.SetColWidth(100)
-				table.SetBorder(false)
-				table.SetHeaderLine(false)
-				table.SetColumnSeparator("")
-				table.SetTablePadding("  ")
-				table.SetNoWhiteSpace(true)
-				table.SetHeader(hdrs)
-
-				for k, v := range resp.Metadata {
-					m := fmt.Sprintf("%v: %v", k, v)
-					row := []string{resp.Id, resp.Parent, m}
-					table.Append(row)
-				}
-
-				table.Render()
-			}
-
+			logger.Infof("deleted: %v", args[0])
 		},
 	}
 
@@ -225,6 +237,7 @@ func IdpCmd() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	cmd.AddCommand(
 		ListIdpsCmd(),
+		CreateIdpsCmd(),
 		DelIdpCmd(),
 	)
 
