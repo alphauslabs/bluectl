@@ -5,13 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/alphauslabs/blue-sdk-go/admin/v1"
+	"github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/bluectl/pkg/ops"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func CreateDefaultCrossAcctAccessInfo() *cobra.Command {
@@ -139,7 +145,10 @@ func GetDefaultCrossAcctAccessInfo() *cobra.Command {
 			}
 
 			defer client.Close()
-			resp, err := client.GetDefaultBillingInfo(ctx, &admin.GetDefaultBillingInfoRequest{Target: args[0]})
+			resp, err := client.GetDefaultBillingInfo(ctx, &admin.GetDefaultBillingInfoRequest{
+				Target: args[0],
+			})
+
 			if err != nil {
 				fnerr(err)
 				return
@@ -156,6 +165,115 @@ func GetDefaultCrossAcctAccessInfo() *cobra.Command {
 	}
 
 	cmd.Flags().SortFlags = false
+	return cmd
+}
+
+func UpdateDefaultCrossAcctAccessInfo() *cobra.Command {
+	var (
+		wait bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "update <account>",
+		Short: "Update cross-account access",
+		Long: `Update cross-account access. Recommended when the status is 'outdated', which means there is an
+update to the CloudFormation template.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			if len(args) == 0 {
+				fnerr(fmt.Errorf("account is required"))
+				return
+			}
+
+			ctx := context.Background()
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.AdminService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := admin.NewClient(ctx, &admin.ClientOptions{Conn: mycon})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			resp, err := client.UpdateDefaultBillingInfoRole(ctx, &admin.UpdateDefaultBillingInfoRoleRequest{
+				Target: args[0],
+			})
+
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			logger.Infof("operation=%v", resp.Name)
+
+			if wait {
+				quit, cancel := context.WithCancel(context.Background())
+				done := make(chan struct{}, 1)
+
+				// Interrupt handler.
+				go func() {
+					sigch := make(chan os.Signal)
+					signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
+					<-sigch
+					cancel()
+				}()
+
+				go func() {
+					for {
+						q := context.WithValue(quit, struct{}{}, nil)
+						op, err := ops.WaitForOperation(q, ops.WaitForOperationInput{
+							Name: resp.Name,
+						})
+
+						if err != nil {
+							logger.Error(err)
+							done <- struct{}{}
+							return
+						}
+
+						if op != nil {
+							if op.Done {
+								if v, ok := op.Result.(*api.Operation_Response); ok {
+									var r api.KeyValue
+									anypb.UnmarshalTo(v.Response, &r, proto.UnmarshalOptions{})
+									logger.Infof("%v=%v", r.Key, r.Value)
+								}
+
+								done <- struct{}{}
+								return
+							}
+						}
+					}
+				}()
+
+				logger.Infof("wait for %v, this could take some time...", resp.Name)
+
+				select {
+				case <-done:
+				case <-quit.Done():
+					logger.Info("interrupted")
+				}
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.Flags().BoolVar(&wait, "wait", wait, "wait for the update to finish")
 	return cmd
 }
 
@@ -224,6 +342,7 @@ func CrossAcctAccessCmd() *cobra.Command {
 	cmd.AddCommand(
 		CreateDefaultCrossAcctAccessInfo(),
 		GetDefaultCrossAcctAccessInfo(),
+		UpdateDefaultCrossAcctAccessInfo(),
 		DelDefaultCrossAcctAccessInfo(),
 	)
 
