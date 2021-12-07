@@ -51,6 +51,7 @@ func init() {
 		cmds.OrgCmd(),
 		cmds.IamUsersCmd(),
 		cmds.IdpCmd(),
+		cmds.CrossAcctAccessCmd(),
 		cmds.AwsCostCmd(),
 		cmds.AwsTagsCmd(),
 		cmds.AwsPayerCmd(),

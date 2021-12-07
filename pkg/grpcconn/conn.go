@@ -14,6 +14,7 @@ const (
 
 	OrgService     = bluesvc
 	IamService     = bluesvc
+	AdminService   = bluesvc
 	CostService    = "cost"
 	BillingService = "billing"
 	OpsService     = bluesvc

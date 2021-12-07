@@ -235,7 +235,6 @@ func GetIamUserCmd() *cobra.Command {
 
 				table.Render()
 			}
-
 		},
 	}
 
