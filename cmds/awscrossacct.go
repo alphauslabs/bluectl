@@ -104,7 +104,7 @@ deploy manually. The command will work all the same, although you have to run fo
 	}
 
 	cmd.Flags().SortFlags = false
-	cmd.Flags().StringVar(&region, "region", region, "optional, the AWS region code (i.e. 'us-east-1')to deploy the CloudFormation template")
+	cmd.Flags().StringVar(&region, "region", region, "optional, the AWS region code (i.e. 'us-east-1') to deploy the CloudFormation template")
 	return cmd
 }
 
