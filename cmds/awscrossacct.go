@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -27,8 +28,8 @@ func CreateDefaultCrossAcctAccessInfo() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "create <account>",
-		Short: "Create a default cross-account access",
-		Long: `Create a default cross-account access. You will be presented with link to a CloudFormation deployment.
+		Short: "Create default cross-account access",
+		Long: `Create default cross-account access. You will be presented with link to a CloudFormation deployment.
 You can deploy the template manually as well using StackSets if you prefer, in which case, you have to
 deploy manually. The command will work all the same, although you have to run for each target account.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -108,11 +109,70 @@ deploy manually. The command will work all the same, although you have to run fo
 	return cmd
 }
 
+func ListDefaultCrossAcctAccessInfo() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List default cross-account access information",
+		Long:  `List default cross-account access information.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			ctx := context.Background()
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.AdminService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := admin.NewClient(ctx, &admin.ClientOptions{Conn: mycon})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			stream, err := client.ListDefaultBillingInfo(ctx, &admin.ListDefaultBillingInfoRequest{})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			for {
+				v, err := stream.Recv()
+				if err == io.EOF {
+					break
+				}
+
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				b, _ := json.Marshal(v)
+				logger.Info(string(b))
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	return cmd
+}
+
 func GetDefaultCrossAcctAccessInfo() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <account>",
-		Short: "Get cross-account access information",
-		Long:  `Get cross-account access information.`,
+		Short: "Get default cross-account access information",
+		Long:  `Get default cross-account access information.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -175,8 +235,8 @@ func UpdateDefaultCrossAcctAccessInfo() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "update <account>",
-		Short: "Update cross-account access",
-		Long: `Update cross-account access. Recommended when the status is 'outdated', which means there is an
+		Short: "Update default cross-account access",
+		Long: `Update default cross-account access. Recommended when the status is 'outdated', which means there is an
 update to the CloudFormation template.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
@@ -280,8 +340,8 @@ update to the CloudFormation template.`,
 func DelDefaultCrossAcctAccessInfo() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rm <account>",
-		Short: "Remove cross-account access",
-		Long:  `Remove cross-account access. This does not delete the CloudFormation stack.`,
+		Short: "Remove default cross-account access",
+		Long:  `Remove default cross-account access. This does not delete the CloudFormation stack.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -341,6 +401,7 @@ func CrossAcctAccessCmd() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	cmd.AddCommand(
 		CreateDefaultCrossAcctAccessInfo(),
+		ListDefaultCrossAcctAccessInfo(),
 		GetDefaultCrossAcctAccessInfo(),
 		UpdateDefaultCrossAcctAccessInfo(),
 		DelDefaultCrossAcctAccessInfo(),
