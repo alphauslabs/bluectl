@@ -19,7 +19,7 @@ func CalculationHistoryCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "calhist [yyyymm]",
+		Use:   "calchist [yyyymm]",
 		Short: "Query calculation history for all accounts",
 		Long:  `Query calculation history for all accounts.`,
 		Run: func(cmd *cobra.Command, args []string) {
