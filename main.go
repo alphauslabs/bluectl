@@ -55,6 +55,7 @@ func init() {
 		cmds.AwsCostCmd(),
 		cmds.AwsTagsCmd(),
 		cmds.AwsPayerCmd(),
+		cmds.AwsBillCmd(),
 		cmds.OpsCmd(),
 		cmds.KvCmd(),
 	)
