@@ -10,18 +10,27 @@ import (
 	"github.com/alphauslabs/blue-sdk-go/billing/v1"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
 func CalculationHistoryCmd() *cobra.Command {
 	var (
+		red   = color.New(color.FgRed).SprintFunc()
 		month string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "calchist [yyyymm]",
 		Short: "Query calculation history for all accounts",
-		Long:  `Query calculation history for all accounts.`,
+		Long: `Query calculation history for all accounts.
+The default output format is:
+
+billingInternalId (yyyymm):
+  accountId: timestamp=timestamp, trigger='cur|invoice'
+
+Timestamps are ordered with the topmost as most recent. 'cur'-triggered means this calculation was
+triggered by updates to the CUR while 'invoice' means by a manual invoice request.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -84,12 +93,29 @@ func CalculationHistoryCmd() *cobra.Command {
 					continue
 				}
 
-				fmt.Printf("billingInternalId: %v\n", v.BillingInternalId)
+				fmt.Printf("%v (%v)\n", v.BillingInternalId, v.Month)
 				for _, acct := range v.Accounts {
 					if len(acct.History) > 0 {
-						fmt.Printf("  accountId: %v\n", acct.AccountId)
+						var itr int
+						var updated bool // after invoice
 						for _, h := range acct.History {
-							fmt.Printf("    timestamp=%v, trigger=%v\n", h.Timestamp, h.Trigger)
+							itr++
+							if h.Trigger == "invoice" {
+								if itr > 1 {
+									updated = true
+								}
+								break
+							}
+						}
+
+						for _, h := range acct.History {
+							if updated && h.Trigger == "invoice" {
+								fmt.Printf(red("  %v: timestamp=%v, trigger=%v\n"),
+									acct.AccountId, h.Timestamp, h.Trigger)
+							} else {
+								fmt.Printf("  %v: timestamp=%v, trigger=%v\n",
+									acct.AccountId, h.Timestamp, h.Trigger)
+							}
 						}
 					}
 				}
