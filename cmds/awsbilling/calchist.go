@@ -2,12 +2,14 @@ package awsbilling
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"os"
 	"time"
 
 	"github.com/alphauslabs/blue-sdk-go/billing/v1"
+	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/fatih/color"
@@ -78,43 +80,107 @@ triggered by updates to the CUR while 'invoice' means by a manual invoice reques
 				return
 			}
 
-			for {
-				v, err := stream.Recv()
-				if err == io.EOF {
-					break
-				}
+			switch {
+			case params.OutFile != "" && params.OutFmt == "csv":
+				if params.OutFile != "" {
+					var f *os.File
+					var wf *csv.Writer
+					f, err = os.Create(params.OutFile)
+					if err != nil {
+						fnerr(err)
+						return
+					}
 
-				if err != nil {
-					fnerr(err)
-					return
-				}
+					wf = csv.NewWriter(f)
+					defer func() {
+						wf.Flush()
+						f.Close()
+					}()
 
-				if len(v.Accounts) == 0 {
-					continue
-				}
+					wf.Write([]string{
+						"billingInternalId",
+						"billingGroupId",
+						"month",
+						"account",
+						"timestamp",
+						"trigger",
+					})
 
-				fmt.Printf("%v/%v (%v)\n", v.BillingInternalId, v.BillingGroupId, v.Month)
-				for _, acct := range v.Accounts {
-					if len(acct.History) > 0 {
-						var itr int
-						var updated bool // after invoice
-						for _, h := range acct.History {
-							itr++
-							if h.Trigger == "invoice" {
-								if itr > 1 {
-									updated = true
-								}
-								break
-							}
+					for {
+						v, err := stream.Recv()
+						if err == io.EOF {
+							break
 						}
 
-						for _, h := range acct.History {
-							if updated && h.Trigger == "invoice" {
-								fmt.Printf(red("  %v: timestamp=%v, trigger=%v\n"),
-									acct.AccountId, h.Timestamp, h.Trigger)
-							} else {
-								fmt.Printf("  %v: timestamp=%v, trigger=%v\n",
-									acct.AccountId, h.Timestamp, h.Trigger)
+						if err != nil {
+							fnerr(err)
+							return
+						}
+
+						if len(v.Accounts) == 0 {
+							continue
+						}
+
+						for _, acct := range v.Accounts {
+							if len(acct.History) > 0 {
+								for _, h := range acct.History {
+									row := []string{
+										v.BillingInternalId,
+										v.BillingGroupId,
+										v.Month,
+										acct.AccountId,
+										h.Timestamp,
+										h.Trigger,
+									}
+
+									logger.Infof("%v --> %v", row, params.OutFile)
+									wf.Write(row)
+								}
+							}
+						}
+					}
+				}
+			case params.OutFmt == "json":
+				logger.Info("format not supported yet")
+			default:
+				for {
+					v, err := stream.Recv()
+					if err == io.EOF {
+						break
+					}
+
+					if err != nil {
+						fnerr(err)
+						return
+					}
+
+					if len(v.Accounts) == 0 {
+						continue
+					}
+
+					fmt.Printf("%v/%v (%v)\n", v.BillingInternalId, v.BillingGroupId, v.Month)
+					for _, acct := range v.Accounts {
+						if len(acct.History) > 0 {
+							var itr int
+							var updated bool // after invoice
+							for _, h := range acct.History {
+								itr++
+								if h.Trigger == "invoice" {
+									if itr > 1 {
+										updated = true
+									}
+									break
+								}
+							}
+
+							for _, h := range acct.History {
+								if updated && h.Trigger == "invoice" {
+									fmt.Printf(red("  %v: timestamp=%v, trigger=%v\n"),
+										acct.AccountId, h.Timestamp, h.Trigger)
+								} else {
+									fmt.Printf("  %v: timestamp=%v, trigger=%v\n",
+										acct.AccountId, h.Timestamp, h.Trigger)
+								}
 							}
 						}
 					}
