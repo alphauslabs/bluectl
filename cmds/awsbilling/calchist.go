@@ -26,7 +26,7 @@ func CalculationHistoryCmd() *cobra.Command {
 		Long: `Query calculation history for all accounts.
 The default output format is:
 
-billingInternalId (yyyymm):
+billingInternalId/billingGroupId (yyyymm):
   accountId: timestamp=timestamp, trigger='cur|invoice'
 
 Timestamps are ordered with the topmost as most recent. 'cur'-triggered means this calculation was
@@ -93,7 +93,7 @@ triggered by updates to the CUR while 'invoice' means by a manual invoice reques
 					continue
 				}
 
-				fmt.Printf("%v (%v)\n", v.BillingInternalId, v.Month)
+				fmt.Printf("%v/%v (%v)\n", v.BillingInternalId, v.BillingGroupId, v.Month)
 				for _, acct := range v.Accounts {
 					if len(acct.History) > 0 {
 						var itr int
