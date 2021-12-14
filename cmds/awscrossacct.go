@@ -24,6 +24,7 @@ import (
 func CreateDefaultCrossAcctAccessInfo() *cobra.Command {
 	var (
 		region string
+		silent bool
 	)
 
 	cmd := &cobra.Command{
@@ -76,8 +77,10 @@ deploy manually. The command will work all the same, although you have to run fo
 			fmt.Println("Open the link below in your browser and deploy:")
 			fmt.Println(resp.LaunchUrl)
 			var rep string
-			fmt.Print("Confirm successful deployment? [Y/n]: ")
-			fmt.Scanln(&rep)
+			if !silent {
+				fmt.Print("Confirm successful deployment? [Y/n]: ")
+				fmt.Scanln(&rep)
+			}
 
 			switch strings.ToLower(rep) {
 			case "n":
@@ -106,6 +109,7 @@ deploy manually. The command will work all the same, although you have to run fo
 
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&region, "region", region, "optional, the AWS region code (i.e. 'us-east-1') to deploy the CloudFormation template")
+	cmd.Flags().BoolVar(&silent, "silent", silent, "if true, no input required (non-interactive)")
 	return cmd
 }
 
