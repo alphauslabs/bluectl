@@ -32,7 +32,17 @@ func CreateDefaultCrossAcctAccessInfo() *cobra.Command {
 		Short: "Create default cross-account access",
 		Long: `Create default cross-account access. You will be presented with link to a CloudFormation deployment.
 You can deploy the template manually as well using StackSets if you prefer, in which case, you have to
-deploy manually. The command will work all the same, although you have to run for each target account.`,
+deploy manually. The command will work all the same, although you have to run for each target account.
+
+Although not required, we recommended you to deploy this stack. This will allow us to query a more
+accurate billing-related information such as your Reserved Instances, Savings Plans, etc. through
+the AWS API. Currently, we only do a best-effort detection of these information from your CUR, which
+is not always accurate.
+
+The stack template will create an IAM role with read-only access to your billing-related information.
+If you want to audit the template, it is publicly available from the link below:
+
+  https://alphaus-cloudformation-templates.s3.ap-northeast-1.amazonaws.com/alphausbillinginfodefault-v1.yml`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
