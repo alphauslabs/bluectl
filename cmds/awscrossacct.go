@@ -21,28 +21,40 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-func CreateDefaultCrossAcctAccessInfo() *cobra.Command {
+func CreateDefaultCostAccessInfo() *cobra.Command {
 	var (
-		region string
 		silent bool
 	)
 
 	cmd := &cobra.Command{
-		Use:   "create <account>",
-		Short: "Create default cross-account access",
-		Long: `Create default cross-account access. You will be presented with link to a CloudFormation deployment.
+		Use:   "create <account> [type]",
+		Short: "Create default cost access",
+		Long: `Create default cost access. You will be presented with link to a CloudFormation deployment based on type.
+
+Valid values for the optional [type] are:
+  apionly - Read-only access to cost information without CUR setup.
+  s3only  - Setup S3 bucket compatible for CUR definition export. Useful if you prefer a different
+            region other than the default.
+
 You can deploy the template manually as well using StackSets if you prefer, in which case, you have to
 deploy manually. The command will work all the same, although you have to run for each target account.
 
-Although not required, we recommended you to deploy this stack. This will allow us to query a more
-accurate billing-related information such as your Reserved Instances, Savings Plans, etc. through
-the AWS API. Currently, we only do a best-effort detection of these information from your CUR, which
-is not always accurate.
+For Wave(Pro) accounts, we recommended you to deploy this stack (type=apionly). This will allow us to
+query a more accurate billing-related information such as your Reserved Instances, Savings Plans, etc.
+through the AWS API. Currently, we only do a best-effort detection of these information from the parent
+CUR, which is not always accurate.
 
 The stack template will create an IAM role with read-only access to your billing-related information.
 If you want to audit the template, it is publicly available from the link below:
 
-  https://alphaus-cloudformation-templates.s3.ap-northeast-1.amazonaws.com/alphausbillinginfodefault-v1.yml`,
+  default:
+  https://alphaus-cloudformation-templates.s3.ap-northeast-1.amazonaws.com/alphauscurexportdef-v1.yml
+
+  apionly:
+  https://alphaus-cloudformation-templates.s3.ap-northeast-1.amazonaws.com/alphausdefaultcostaccess-v1.yml
+
+  s3only:
+  https://alphaus-cloudformation-templates.s3.ap-northeast-1.amazonaws.com/alphauscurexportbucket-v1.yml`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -74,11 +86,24 @@ If you want to audit the template, it is publicly available from the link below:
 				return
 			}
 
-			defer client.Close()
-			resp, err := client.GetDefaultBillingInfoTemplateUrl(ctx, &admin.GetDefaultBillingInfoTemplateUrlRequest{
-				Region: region,
-			})
+			var s3only bool
+			req := admin.GetDefaultCostAccessTemplateUrlRequest{}
+			if len(args) >= 2 {
+				switch args[1] {
+				case "": // empty is default (valid)
+				case "apionly":
+					req.Type = args[1]
+				case "s3only":
+					req.Type = args[1]
+					s3only = true
+				default:
+					fnerr(fmt.Errorf("unknown type: %v", args[1]))
+					return
+				}
+			}
 
+			defer client.Close()
+			resp, err := client.GetDefaultCostAccessTemplateUrl(ctx, &req)
 			if err != nil {
 				fnerr(err)
 				return
@@ -86,6 +111,11 @@ If you want to audit the template, it is publicly available from the link below:
 
 			fmt.Println("Open the link below in your browser and deploy:")
 			fmt.Println(resp.LaunchUrl)
+			if s3only {
+				fmt.Println("\nTo use the deployed bucket, rerun this command with the default type (empty) then select the 'USE_EXISTING' parameter in your CloudFormation console.")
+				return
+			}
+
 			var rep string
 			if !silent {
 				fmt.Print("Confirm successful deployment? [Y/n]: ")
@@ -99,7 +129,7 @@ If you want to audit the template, it is publicly available from the link below:
 				fallthrough
 			case "y":
 				fmt.Println("Validating access...")
-				resp, err := client.CreateDefaultBillingInfoRole(ctx, &admin.CreateDefaultBillingInfoRoleRequest{
+				resp, err := client.CreateDefaultCostAccess(ctx, &admin.CreateDefaultCostAccessRequest{
 					Target: args[0],
 				})
 
@@ -118,16 +148,15 @@ If you want to audit the template, it is publicly available from the link below:
 	}
 
 	cmd.Flags().SortFlags = false
-	cmd.Flags().StringVar(&region, "region", region, "optional, the AWS region code (i.e. 'us-east-1') to deploy the CloudFormation template")
 	cmd.Flags().BoolVar(&silent, "silent", silent, "if true, no input required (non-interactive)")
 	return cmd
 }
 
-func ListDefaultCrossAcctAccessInfo() *cobra.Command {
+func ListDefaultCostAccessInfo() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List default cross-account access information",
-		Long:  `List default cross-account access information.`,
+		Short: "List default cost access information",
+		Long:  `List default cost access information.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -155,7 +184,7 @@ func ListDefaultCrossAcctAccessInfo() *cobra.Command {
 			}
 
 			defer client.Close()
-			stream, err := client.ListDefaultBillingInfo(ctx, &admin.ListDefaultBillingInfoRequest{})
+			stream, err := client.ListDefaultCostAccess(ctx, &admin.ListDefaultCostAccessRequest{})
 			if err != nil {
 				fnerr(err)
 				return
@@ -182,11 +211,11 @@ func ListDefaultCrossAcctAccessInfo() *cobra.Command {
 	return cmd
 }
 
-func GetDefaultCrossAcctAccessInfo() *cobra.Command {
+func GetDefaultCostAccessInfo() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <account>",
-		Short: "Get default cross-account access information",
-		Long:  `Get default cross-account access information.`,
+		Short: "Get default cost access information",
+		Long:  `Get default cost access information.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -219,7 +248,7 @@ func GetDefaultCrossAcctAccessInfo() *cobra.Command {
 			}
 
 			defer client.Close()
-			resp, err := client.GetDefaultBillingInfo(ctx, &admin.GetDefaultBillingInfoRequest{
+			resp, err := client.GetDefaultCostAccess(ctx, &admin.GetDefaultCostAccessRequest{
 				Target: args[0],
 			})
 
@@ -242,15 +271,15 @@ func GetDefaultCrossAcctAccessInfo() *cobra.Command {
 	return cmd
 }
 
-func UpdateDefaultCrossAcctAccessInfo() *cobra.Command {
+func UpdateDefaultCostAccessInfo() *cobra.Command {
 	var (
 		wait bool
 	)
 
 	cmd := &cobra.Command{
 		Use:   "update <account>",
-		Short: "Update default cross-account access",
-		Long: `Update default cross-account access. Recommended when the status is 'outdated', which means there is an
+		Short: "Update default cost access",
+		Long: `Update default cost access. Recommended when the status is 'outdated', which means there is an
 update to the CloudFormation template.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
@@ -284,7 +313,7 @@ update to the CloudFormation template.`,
 			}
 
 			defer client.Close()
-			resp, err := client.UpdateDefaultBillingInfoRole(ctx, &admin.UpdateDefaultBillingInfoRoleRequest{
+			resp, err := client.UpdateDefaultCostAccess(ctx, &admin.UpdateDefaultCostAccessRequest{
 				Target: args[0],
 			})
 
@@ -351,11 +380,11 @@ update to the CloudFormation template.`,
 	return cmd
 }
 
-func DelDefaultCrossAcctAccessInfo() *cobra.Command {
+func DelDefaultCostAccessInfo() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rm <account>",
-		Short: "Remove default cross-account access",
-		Long:  `Remove default cross-account access. This does not delete the CloudFormation stack.`,
+		Short: "Remove default cost access",
+		Long:  `Remove default cost access. This does not delete the CloudFormation stack.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -388,7 +417,10 @@ func DelDefaultCrossAcctAccessInfo() *cobra.Command {
 			}
 
 			defer client.Close()
-			_, err = client.DeleteDefaultBillingInfoRole(ctx, &admin.DeleteDefaultBillingInfoRoleRequest{Target: args[0]})
+			_, err = client.DeleteDefaultCostAccess(ctx, &admin.DeleteDefaultCostAccessRequest{
+				Target: args[0],
+			})
+
 			if err != nil {
 				fnerr(err)
 				return
@@ -405,8 +437,8 @@ func DelDefaultCrossAcctAccessInfo() *cobra.Command {
 func CrossAcctAccessCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "xacct",
-		Short: "Subcommand for AWS cross-account access operations",
-		Long:  `Subcommand for AWS cross-account access operations.`,
+		Short: "Subcommand for AWS cost access operations",
+		Long:  `Subcommand for AWS cost access operations.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			logger.Info("see -h for more information")
 		},
@@ -414,11 +446,11 @@ func CrossAcctAccessCmd() *cobra.Command {
 
 	cmd.Flags().SortFlags = false
 	cmd.AddCommand(
-		CreateDefaultCrossAcctAccessInfo(),
-		ListDefaultCrossAcctAccessInfo(),
-		GetDefaultCrossAcctAccessInfo(),
-		UpdateDefaultCrossAcctAccessInfo(),
-		DelDefaultCrossAcctAccessInfo(),
+		CreateDefaultCostAccessInfo(),
+		ListDefaultCostAccessInfo(),
+		GetDefaultCostAccessInfo(),
+		UpdateDefaultCostAccessInfo(),
+		DelDefaultCostAccessInfo(),
 	)
 
 	return cmd
