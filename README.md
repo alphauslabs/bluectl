@@ -8,6 +8,8 @@ To install using [brew](https://brew.sh/) (Linux, MacOS, Windows using WSL/2), r
 $ brew install alphauslabs/tap/bluectl
 ```
 
+You can also download the binaries from the [release](https://github.com/alphauslabs/bluectl/releases) page.
+
 To setup the environment variables required for authentication, check out this [page](https://alphauslabs.github.io/blueapi/authentication/apikey.html).
 
 You can also use the `--client-id` and `--client-secret` flags to set the values explicitly.
