@@ -19,6 +19,7 @@ func AwsBillCmd() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	cmd.AddCommand(
 		awsbilling.CalculationHistoryCmd(),
+		awsbilling.CostsDriftCmd(),
 	)
 
 	return cmd
