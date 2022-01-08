@@ -100,6 +100,7 @@ func CostsDriftCmd() *cobra.Command {
 					wf.Write([]string{
 						"billingInternalId",
 						"billingGroupId",
+						"account",
 						"month",
 						"snapshot",
 						"current",
@@ -121,11 +122,11 @@ func CostsDriftCmd() *cobra.Command {
 						row := []string{
 							v.BillingInternalId,
 							v.BillingGroupId,
+							v.Account,
 							month,
 							fmt.Sprintf("%f", v.Snapshot),
 							fmt.Sprintf("%f", v.Current),
 							fmt.Sprintf("%f", v.Diff),
-							fmt.Sprintf("%v", v.Drift),
 						}
 
 						logger.Infof("%v --> %v", row, params.OutFile)
@@ -142,10 +143,10 @@ func CostsDriftCmd() *cobra.Command {
 					tablewriter.ALIGN_LEFT,
 					tablewriter.ALIGN_LEFT,
 					tablewriter.ALIGN_LEFT,
-					tablewriter.ALIGN_RIGHT,
-					tablewriter.ALIGN_RIGHT,
-					tablewriter.ALIGN_RIGHT,
 					tablewriter.ALIGN_LEFT,
+					tablewriter.ALIGN_RIGHT,
+					tablewriter.ALIGN_RIGHT,
+					tablewriter.ALIGN_RIGHT,
 				})
 
 				table.SetColWidth(100)
@@ -157,11 +158,11 @@ func CostsDriftCmd() *cobra.Command {
 				table.SetHeader([]string{
 					"INTERNAL_ID",
 					"BILLING_GROUP_ID",
+					"ACCOUNT",
 					"MONTH",
 					"SNAPSHOT",
 					"CURRENT",
 					"DIFF",
-					"DRIFT",
 				})
 
 				for {
@@ -186,11 +187,11 @@ func CostsDriftCmd() *cobra.Command {
 					row := []string{
 						v.BillingInternalId,
 						v.BillingGroupId,
+						v.Account,
 						month,
 						fmt.Sprintf(vf(v.Snapshot), v.Snapshot),
 						fmt.Sprintf(vf(v.Current), v.Current),
 						fmt.Sprintf(vf(v.Diff), math.Abs(v.Diff)),
-						fmt.Sprintf("%v", v.Drift),
 					}
 
 					fmt.Printf("\033[2K\rrecv:%v...", row)
