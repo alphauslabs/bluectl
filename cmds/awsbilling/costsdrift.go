@@ -134,7 +134,7 @@ func CostsDriftCmd() *cobra.Command {
 					}
 				}
 			case params.OutFmt == "json":
-				logger.Info("format not supported yet")
+				logger.Info("format not supported")
 			default:
 				table := tablewriter.NewWriter(os.Stdout)
 				table.SetAutoFormatHeaders(false)
