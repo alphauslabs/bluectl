@@ -606,6 +606,161 @@ func AwsCalculateCostsCmd() *cobra.Command {
 	return cmd
 }
 
+func AwsListRunningAcctsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "ls-runaccts [month]",
+		Short: "List accounts that are still processing",
+		Long: `List accounts that are still processing. The format for [month] is yyyymm.
+If [month] is not provided, it defaults to the current UTC month.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			mm := time.Now().UTC().Format("200601")
+			if len(args) > 0 {
+				_, err := time.Parse("200601", args[0])
+				if err != nil {
+					fnerr(err)
+				} else {
+					mm = args[0]
+				}
+			}
+
+			ctx := context.Background()
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.CostService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := cost.NewClient(ctx, &cost.ClientOptions{Conn: mycon})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			var f *os.File
+			var wf *csv.Writer
+
+			if params.OutFile != "" {
+				f, err = os.Create(params.OutFile)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				wf = csv.NewWriter(f)
+				defer func() {
+					wf.Flush()
+					f.Close()
+				}()
+
+				switch params.OutFmt {
+				case "csv":
+					wf.Write([]string{"month", "account", "date", "started"})
+				case "json":
+				default:
+					fnerr(fmt.Errorf("unsupported output format"))
+					return
+				}
+			}
+
+			fnWrite := func(v *cost.ListCalculatorRunningAccountsResponse) {
+				b, _ := json.Marshal(v)
+				fmt.Println(string(b))
+				if params.OutFile != "" {
+					switch params.OutFmt {
+					case "csv":
+						wf.Write([]string{
+							v.Aws.Month,
+							v.Aws.Account,
+							v.Aws.Date,
+							v.Aws.Started,
+						})
+					case "json":
+						fmt.Fprintf(f, "%v\n", string(b))
+					}
+				}
+			}
+
+			stream, err := client.ListCalculatorRunningAccounts(ctx,
+				&cost.ListCalculatorRunningAccountsRequest{
+					Vendor: "aws",
+					Month:  mm,
+				},
+			)
+
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetAutoFormatHeaders(false)
+			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetColWidth(100)
+			table.SetBorder(false)
+			table.SetHeaderLine(false)
+			table.SetColumnSeparator("")
+			table.SetTablePadding("  ")
+			table.SetNoWhiteSpace(true)
+			table.SetHeader([]string{"MONTH", "ACCOUNT", "DATE", "STARTED"})
+			var render bool
+
+			for {
+				v, err := stream.Recv()
+				if err == io.EOF {
+					break
+				}
+
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				switch {
+				case params.OutFile != "":
+					fnWrite(v)
+				default:
+					render = true
+					row := []string{
+						v.Aws.Month,
+						v.Aws.Account,
+						v.Aws.Date,
+						v.Aws.Started,
+					}
+
+					fmt.Printf("\033[2K\rrecv:%v...", row)
+					table.Append(row)
+				}
+			}
+
+			if params.OutFile != "" {
+				logger.Infof("data written to %v in %v format", params.OutFile, params.OutFmt)
+			}
+
+			if render {
+				fmt.Printf("\033[2K\r") // reset cursor
+				table.Render()
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	return cmd
+}
+
 func AwsGetCalculationHistoryCmd() *cobra.Command {
 	var (
 		rawInput string
@@ -808,6 +963,7 @@ func AwsCostCmd() *cobra.Command {
 		AwsGetCostsCmd(),
 		AwsGetAdjustmentsCmd(),
 		AwsCalculateCostsCmd(),
+		AwsListRunningAcctsCmd(),
 		AwsGetCalculationHistoryCmd(),
 	)
 
