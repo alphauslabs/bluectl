@@ -21,7 +21,7 @@ var (
 		Use:   "bluectl",
 		Short: bold("bluectl") + " - Command line interface for Alphaus services",
 		Long: bold("bluectl") + ` - Command line interface for Alphaus services.
-Copyright (c) 2021 Alphaus Cloud, Inc. All rights reserved.
+Copyright (c) 2021-2022 Alphaus Cloud, Inc. All rights reserved.
 
 The general form is bluectl <resource[ subresource...]> <action> [flags]. Most commands support the --raw-input
 flag to be always in sync with the current feature set of the API in case the built-in flags don't support all
