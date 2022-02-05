@@ -3,12 +3,14 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 
 	_ "github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/bluectl/cmds"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/fatih/color"
+	tomlv2 "github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -29,6 +31,41 @@ https://alphauslabs.github.io/blueapidocs/ for the latest API reference.`,
 			if params.CleanOut {
 				logger.SetPrefix(logger.PrefixNone)
 			}
+
+			home, _ := os.UserHomeDir()
+			cfgfile := filepath.Join(home, ".config", "alphaus", "config.toml")
+			_, err := os.Stat(cfgfile)
+			if err == nil && params.AuthProfile != "" {
+				b, err := os.ReadFile(cfgfile)
+				if err != nil {
+					logger.Error(err)
+					os.Exit(1)
+				}
+
+				var cfg map[string]map[string]string
+				err = tomlv2.Unmarshal(b, &cfg)
+				if err != nil {
+					logger.Error(err)
+					os.Exit(1)
+				}
+
+				if v, ok := cfg[params.AuthProfile]; ok {
+					if _, ok = v["client-id"]; ok {
+						params.ClientId = v["client-id"]
+					}
+
+					if _, ok = v["client-secret"]; ok {
+						params.ClientSecret = v["client-secret"]
+					}
+
+					if _, ok = v["auth-url"]; ok {
+						params.AuthUrl = v["auth-url"]
+					}
+				} else {
+					logger.Errorf("[%v] not found in %v", params.AuthProfile, cfgfile)
+					os.Exit(1)
+				}
+			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			logger.Info("see -h for more information")
@@ -39,6 +76,7 @@ https://alphauslabs.github.io/blueapidocs/ for the latest API reference.`,
 func init() {
 	rootCmd.Flags().SortFlags = false
 	rootCmd.PersistentFlags().SortFlags = false
+	rootCmd.PersistentFlags().StringVar(&params.AuthProfile, "profile", "default", "profile name in ~/.config/alphaus/config.toml")
 	rootCmd.PersistentFlags().StringVar(&params.AuthUrl, "auth-url", os.Getenv("ALPHAUS_AUTH_URL"), "authentication URL, defaults to $ALPHAUS_AUTH_URL if set")
 	rootCmd.PersistentFlags().StringVar(&params.ClientId, "client-id", os.Getenv("ALPHAUS_CLIENT_ID"), "your client id, defaults to $ALPHAUS_CLIENT_ID")
 	rootCmd.PersistentFlags().StringVar(&params.ClientSecret, "client-secret", os.Getenv("ALPHAUS_CLIENT_SECRET"), "your client secret, defaults to $ALPHAUS_CLIENT_SECRET")
