@@ -25,6 +25,202 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
+func AwsGetCostAttributesCmd() *cobra.Command {
+	var (
+		rawInput              string
+		costtype              string
+		id                    string
+		start                 string
+		end                   string
+		includeTags           bool
+		includeCostCategories bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "get-attrs",
+		Short: "Read AWS cost attributes",
+		Long: `Read AWS cost attributes. At the moment, we recommend you to use the --raw-input flag to take advantage
+of the API's full features described in https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCostAttributes.
+Note that this will invalidate all the other flags.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			if true {
+				logger.Info("work-in-progress, stay tuned!")
+				return
+			}
+
+			ctx := context.Background()
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.CostService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := cost.NewClient(ctx, &cost.ClientOptions{Conn: mycon})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			var f *os.File
+			var wf *csv.Writer
+
+			if params.OutFile != "" {
+				f, err = os.Create(params.OutFile)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				wf = csv.NewWriter(f)
+				defer func() {
+					wf.Flush()
+					f.Close()
+				}()
+
+				switch params.OutFmt {
+				case "csv":
+					wf.Write([]string{
+						"groupId",
+						"account",
+						"date",
+						"productCode",
+						"serviceCode",
+						"region",
+						"zone",
+						"usageType",
+						"instanceType",
+						"operation",
+						"invoiceId",
+						"description",
+						"resourceId",
+						"tags",
+						"costCategories",
+						"usageAmount",
+						"cost",
+						"baseCurrency",
+						"exchangeRate",
+						"targetCost",
+						"targetCurrency",
+						"effectiveCost",
+						"targetEffectiveCost",
+						"amortizedCost",
+						"targetAmortizedCost",
+					})
+				case "json":
+				default:
+					fnerr(fmt.Errorf("unsupported output format"))
+					return
+				}
+			}
+
+			fnWriteFile := func(v *awstypes.CostAttribute) {
+				b, _ := json.Marshal(v)
+				fmt.Println(string(b))
+				if params.OutFile != "" {
+					var tags, cc string
+					if v.Tags != nil {
+						b, _ := json.Marshal(v.Tags)
+						tags = string(b)
+					}
+
+					if v.CostCategories != nil {
+						b, _ := json.Marshal(v.CostCategories)
+						cc = string(b)
+					}
+
+					switch params.OutFmt {
+					case "csv":
+						wf.Write([]string{
+							v.GroupId,
+							v.Account,
+							v.ProductCode,
+							v.ServiceCode,
+							v.Region,
+							v.Zone,
+							v.UsageType,
+							v.InstanceType,
+							v.Operation,
+							v.InvoiceId,
+							v.Description,
+							v.ResourceId,
+							tags,
+							cc,
+						})
+					case "json":
+						fmt.Fprintf(f, "%v\n", string(b))
+					}
+				}
+			}
+
+			var stream cost.Cost_ReadCostAttributesClient
+
+			switch {
+			case rawInput != "":
+				var in cost.ReadCostAttributesRequest
+				err := json.Unmarshal([]byte(rawInput), &in)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				if in.Vendor == "" {
+					in.Vendor = "aws"
+				}
+
+				stream, err = client.ReadCostAttributes(ctx, &in)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+			default:
+				logger.Infof("sorry, please use --raw-input for now")
+				return
+			}
+
+			for {
+				v, err := stream.Recv()
+				if err == io.EOF {
+					break
+				}
+
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				fnWriteFile(v.Aws)
+			}
+
+			if params.OutFile != "" {
+				logger.Infof("data written to %v in %v format", params.OutFile, params.OutFmt)
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCosts")
+	cmd.Flags().StringVar(&costtype, "type", "account", "type of cost to read: all, account, billinggroup")
+	cmd.Flags().StringVar(&id, "id", id, "account id or billing group id, depending on --type, skipped if 'all'")
+	cmd.Flags().StringVar(&start, "start", time.Now().UTC().Format("200601")+"01", "yyyymmdd: start date to stream data; default: first day of the current month (UTC)")
+	cmd.Flags().StringVar(&end, "end", time.Now().UTC().Format("20060102"), "yyyymmdd: end date to stream data; default: current date (UTC)")
+	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
+	cmd.Flags().BoolVar(&includeCostCategories, "include-costcategories", includeCostCategories, "if true, include cost categories in the stream")
+	return cmd
+}
+
 func AwsGetCostsCmd() *cobra.Command {
 	var (
 		rawInput              string
@@ -34,6 +230,7 @@ func AwsGetCostsCmd() *cobra.Command {
 		end                   string
 		includeTags           bool
 		includeCostCategories bool
+		colWidth              int
 	)
 
 	cmd := &cobra.Command{
@@ -171,11 +368,39 @@ Note that this will invalidate all the other flags.`,
 				}
 			}
 
+			type colT struct {
+				name   string
+				title  string
+				enable bool
+				val    interface{}
+				vfmt   string
+			}
+
 			var stream cost.Cost_ReadCostsClient
+			var in cost.ReadCostsRequest
+			cols := []string{}
+			refCols := []colT{
+				{name: "group", title: "GROUP"},
+				{name: "account", title: "ACCOUNT"},
+				{name: "date", title: "DATE", enable: true},
+				{name: "productCode", title: "SERVICE"},
+				{name: "serviceCode", title: "SERVICECODE"},
+				{name: "region", title: "REGION"},
+				{name: "zone", title: "ZONE"},
+				{name: "usageType", title: "USAGE_TYPE"},
+				{name: "instanceType", title: "INSTANCE_TYPE"},
+				{name: "operation", title: "OPERATION"},
+				{name: "invoiceId", title: "INVOICE_ID"},
+				{name: "description", title: "DESCRIPTION"},
+				{name: "resourceId", title: "RESOURCE_ID"},
+				{name: "tags", title: "TAGS"},
+				{name: "costCategories", title: "COST_CATEGORIES"},
+				{name: "usage", title: "USAGE", enable: true, vfmt: "%.10f"},
+				{name: "cost", title: "COST", enable: true, vfmt: "%.10f"},
+			}
 
 			switch {
 			case rawInput != "":
-				var in cost.ReadCostsRequest
 				err := json.Unmarshal([]byte(rawInput), &in)
 				if err != nil {
 					fnerr(err)
@@ -184,6 +409,29 @@ Note that this will invalidate all the other flags.`,
 
 				if in.Vendor == "" {
 					in.Vendor = "aws"
+				}
+
+				if in.AwsOptions != nil {
+					if in.AwsOptions.GroupByColumns != "" {
+						refCols[0].enable = true // group
+						refCols[1].enable = true // account
+						gbcs := strings.Split(in.AwsOptions.GroupByColumns, ",")
+						for _, gbc := range gbcs {
+							for i, rc := range refCols {
+								if rc.name == gbc {
+									refCols[i].enable = true
+									break
+								}
+							}
+						}
+					} else {
+						for i := range refCols {
+							refCols[i].enable = true
+						}
+					}
+
+					refCols[13].enable = in.AwsOptions.IncludeTags
+					refCols[14].enable = in.AwsOptions.IncludeCostCategories
 				}
 
 				stream, err = client.ReadCosts(ctx, &in)
@@ -217,7 +465,7 @@ Note that this will invalidate all the other flags.`,
 					}
 				}
 
-				in := cost.ReadCostsRequest{
+				in = cost.ReadCostsRequest{
 					Vendor:    "aws",
 					StartTime: ts.Format("20060102"),
 					EndTime:   te.Format("20060102"),
@@ -244,6 +492,25 @@ Note that this will invalidate all the other flags.`,
 				}
 			}
 
+			for _, v := range refCols {
+				if v.enable {
+					cols = append(cols, v.title)
+				}
+			}
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetAutoFormatHeaders(false)
+			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetColWidth(colWidth)
+			table.SetBorder(false)
+			table.SetHeaderLine(false)
+			table.SetColumnSeparator("")
+			table.SetTablePadding("  ")
+			table.SetNoWhiteSpace(true)
+			table.SetHeader(cols)
+			var render bool
+
 			for {
 				v, err := stream.Recv()
 				if err == io.EOF {
@@ -255,7 +522,48 @@ Note that this will invalidate all the other flags.`,
 					return
 				}
 
-				fnWriteFile(v.Aws)
+				switch {
+				case params.OutFile != "":
+					fnWriteFile(v.Aws)
+				default:
+					render = true
+					refCols[0].val = v.Aws.GroupId
+					refCols[1].val = v.Aws.Account
+					refCols[2].val = v.Aws.Date
+					refCols[3].val = v.Aws.ProductCode
+					refCols[4].val = v.Aws.ServiceCode
+					refCols[5].val = v.Aws.Region
+					refCols[6].val = v.Aws.Zone
+					refCols[7].val = v.Aws.UsageType
+					refCols[8].val = v.Aws.InstanceType
+					refCols[9].val = v.Aws.Operation
+					refCols[10].val = v.Aws.InvoiceId
+					refCols[11].val = v.Aws.Description
+					refCols[12].val = v.Aws.ResourceId
+					refCols[13].val = v.Aws.Tags
+					refCols[14].val = v.Aws.CostCategories
+					refCols[15].val = v.Aws.Usage
+					refCols[16].val = v.Aws.Cost
+					row := []string{}
+					for _, rc := range refCols {
+						if rc.enable {
+							vfmt := "%v"
+							if rc.vfmt != "" {
+								vfmt = rc.vfmt
+							}
+
+							row = append(row, fmt.Sprintf(vfmt, rc.val))
+						}
+					}
+
+					fmt.Printf("\033[2K\rrecv:%v...", row)
+					table.Append(row)
+				}
+			}
+
+			if render {
+				fmt.Printf("\033[2K\r") // reset cursor
+				table.Render()
 			}
 
 			if params.OutFile != "" {
@@ -272,6 +580,7 @@ Note that this will invalidate all the other flags.`,
 	cmd.Flags().StringVar(&end, "end", time.Now().UTC().Format("20060102"), "yyyymmdd: end date to stream data; default: current date (UTC)")
 	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
 	cmd.Flags().BoolVar(&includeCostCategories, "include-costcategories", includeCostCategories, "if true, include cost categories in the stream")
+	cmd.Flags().IntVar(&colWidth, "col-width", 30, "set column width, applies to table-based outputs only")
 	return cmd
 }
 
@@ -960,6 +1269,7 @@ func AwsCostCmd() *cobra.Command {
 
 	cmd.Flags().SortFlags = false
 	cmd.AddCommand(
+		AwsGetCostAttributesCmd(),
 		AwsGetCostsCmd(),
 		AwsGetAdjustmentsCmd(),
 		AwsCalculateCostsCmd(),
