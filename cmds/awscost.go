@@ -27,13 +27,8 @@ import (
 
 func AwsGetCostAttributesCmd() *cobra.Command {
 	var (
-		rawInput              string
-		costtype              string
-		id                    string
-		start                 string
-		end                   string
-		includeTags           bool
-		includeCostCategories bool
+		rawInput string
+		colWidth int
 	)
 
 	cmd := &cobra.Command{
@@ -53,11 +48,6 @@ Note that this will invalidate all the other flags.`,
 			fnerr := func(e error) {
 				logger.Error(e)
 				ret = 1
-			}
-
-			if true {
-				logger.Info("work-in-progress, stay tuned!")
-				return
 			}
 
 			ctx := context.Background()
@@ -95,7 +85,6 @@ Note that this will invalidate all the other flags.`,
 					wf.Write([]string{
 						"groupId",
 						"account",
-						"date",
 						"productCode",
 						"serviceCode",
 						"region",
@@ -108,16 +97,6 @@ Note that this will invalidate all the other flags.`,
 						"resourceId",
 						"tags",
 						"costCategories",
-						"usageAmount",
-						"cost",
-						"baseCurrency",
-						"exchangeRate",
-						"targetCost",
-						"targetCurrency",
-						"effectiveCost",
-						"targetEffectiveCost",
-						"amortizedCost",
-						"targetAmortizedCost",
 					})
 				case "json":
 				default:
@@ -165,11 +144,35 @@ Note that this will invalidate all the other flags.`,
 				}
 			}
 
+			type colT struct {
+				name   string
+				title  string
+				enable bool
+				val    interface{}
+				vfmt   string
+			}
+
 			var stream cost.Cost_ReadCostAttributesClient
+			var in cost.ReadCostAttributesRequest
+			cols := []string{}
+			refCols := []colT{
+				{name: "account", title: "ACCOUNT", enable: true},
+				{name: "productCode", title: "SERVICE"},
+				{name: "serviceCode", title: "SERVICECODE"},
+				{name: "region", title: "REGION"},
+				{name: "zone", title: "ZONE"},
+				{name: "usageType", title: "USAGE_TYPE"},
+				{name: "instanceType", title: "INSTANCE_TYPE"},
+				{name: "operation", title: "OPERATION"},
+				{name: "invoiceId", title: "INVOICE_ID"},
+				{name: "description", title: "DESCRIPTION"},
+				{name: "resourceId", title: "RESOURCE_ID"},
+				{name: "tags", title: "TAGS"},
+				{name: "costCategories", title: "COST_CATEGORIES"},
+			}
 
 			switch {
 			case rawInput != "":
-				var in cost.ReadCostAttributesRequest
 				err := json.Unmarshal([]byte(rawInput), &in)
 				if err != nil {
 					fnerr(err)
@@ -180,15 +183,52 @@ Note that this will invalidate all the other flags.`,
 					in.Vendor = "aws"
 				}
 
+				if in.AwsOptions != nil {
+					if in.AwsOptions.Dimensions != "" {
+						gbcs := strings.Split(in.AwsOptions.Dimensions, ",")
+						for _, gbc := range gbcs {
+							for i, rc := range refCols {
+								if rc.name == gbc {
+									refCols[i].enable = true
+									break
+								}
+							}
+						}
+					} else {
+						for i := range refCols {
+							refCols[i].enable = true
+						}
+					}
+				}
+
 				stream, err = client.ReadCostAttributes(ctx, &in)
 				if err != nil {
 					fnerr(err)
 					return
 				}
 			default:
-				logger.Infof("sorry, please use --raw-input for now")
+				logger.Info("please use --raw-input for now, sorry")
 				return
 			}
+
+			for _, v := range refCols {
+				if v.enable {
+					cols = append(cols, v.title)
+				}
+			}
+
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetAutoFormatHeaders(false)
+			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetColWidth(colWidth)
+			table.SetBorder(false)
+			table.SetHeaderLine(false)
+			table.SetColumnSeparator("")
+			table.SetTablePadding("  ")
+			table.SetNoWhiteSpace(true)
+			table.SetHeader(cols)
+			var render bool
 
 			for {
 				v, err := stream.Recv()
@@ -201,7 +241,50 @@ Note that this will invalidate all the other flags.`,
 					return
 				}
 
-				fnWriteFile(v.Aws)
+				switch {
+				case params.OutFile != "":
+					fnWriteFile(v.Aws)
+				default:
+					render = true
+					refCols[0].val = v.Aws.Account
+					refCols[1].val = v.Aws.ProductCode
+					refCols[2].val = v.Aws.ServiceCode
+					refCols[3].val = v.Aws.Region
+					refCols[4].val = v.Aws.Zone
+					refCols[5].val = v.Aws.UsageType
+					refCols[6].val = v.Aws.InstanceType
+					refCols[7].val = v.Aws.Operation
+					refCols[8].val = v.Aws.InvoiceId
+					refCols[9].val = v.Aws.Description
+					refCols[10].val = v.Aws.ResourceId
+					refCols[11].val = v.Aws.Tags
+					refCols[12].val = v.Aws.CostCategories
+					row := []string{}
+					for _, rc := range refCols {
+						if rc.enable {
+							if (rc.name == "tags" || rc.name == "costCategories") && rc.val != nil {
+								ms := []string{}
+								m := rc.val.(map[string]string)
+								for k, v := range m {
+									ms = append(ms, fmt.Sprintf("%v:%v", k, v))
+								}
+
+								jms := strings.Join(ms, ",")
+								row = append(row, fmt.Sprintf("%v", jms))
+							} else {
+								row = append(row, fmt.Sprintf("%v", rc.val))
+							}
+						}
+					}
+
+					fmt.Printf("\033[2K\rrecv:%v...", row)
+					table.Append(row)
+				}
+			}
+
+			if render {
+				fmt.Printf("\033[2K\r") // reset cursor
+				table.Render()
 			}
 
 			if params.OutFile != "" {
@@ -212,12 +295,7 @@ Note that this will invalidate all the other flags.`,
 
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCosts")
-	cmd.Flags().StringVar(&costtype, "type", "account", "type of cost to read: all, account, billinggroup")
-	cmd.Flags().StringVar(&id, "id", id, "account id or billing group id, depending on --type, skipped if 'all'")
-	cmd.Flags().StringVar(&start, "start", time.Now().UTC().Format("200601")+"01", "yyyymmdd: start date to stream data; default: first day of the current month (UTC)")
-	cmd.Flags().StringVar(&end, "end", time.Now().UTC().Format("20060102"), "yyyymmdd: end date to stream data; default: current date (UTC)")
-	cmd.Flags().BoolVar(&includeTags, "include-tags", includeTags, "if true, include tags in the stream")
-	cmd.Flags().BoolVar(&includeCostCategories, "include-costcategories", includeCostCategories, "if true, include cost categories in the stream")
+	cmd.Flags().IntVar(&colWidth, "col-width", 30, "set column width, applies to table-based outputs only")
 	return cmd
 }
 
