@@ -35,7 +35,13 @@ https://alphauslabs.github.io/blueapidocs/ for the latest API reference.`,
 			home, _ := os.UserHomeDir()
 			cfgfile := filepath.Join(home, ".config", "alphaus", "config.toml")
 			_, err := os.Stat(cfgfile)
-			if err == nil && params.AuthProfile != "" {
+			if err == nil {
+				if params.AuthProfile == "" {
+					params.AuthProfile = "default"
+				}
+			}
+
+			if params.AuthProfile != "" {
 				b, err := os.ReadFile(cfgfile)
 				if err != nil {
 					logger.Error(err)
@@ -76,7 +82,7 @@ https://alphauslabs.github.io/blueapidocs/ for the latest API reference.`,
 func init() {
 	rootCmd.Flags().SortFlags = false
 	rootCmd.PersistentFlags().SortFlags = false
-	rootCmd.PersistentFlags().StringVar(&params.AuthProfile, "profile", "default", "profile name in ~/.config/alphaus/config.toml")
+	rootCmd.PersistentFlags().StringVar(&params.AuthProfile, "profile", params.AuthProfile, "profile name in ~/.config/alphaus/config.toml, default is [default]")
 	rootCmd.PersistentFlags().StringVar(&params.AuthUrl, "auth-url", os.Getenv("ALPHAUS_AUTH_URL"), "authentication URL, defaults to $ALPHAUS_AUTH_URL if set")
 	rootCmd.PersistentFlags().StringVar(&params.ClientId, "client-id", os.Getenv("ALPHAUS_CLIENT_ID"), "your client id, defaults to $ALPHAUS_CLIENT_ID")
 	rootCmd.PersistentFlags().StringVar(&params.ClientSecret, "client-secret", os.Getenv("ALPHAUS_CLIENT_SECRET"), "your client secret, defaults to $ALPHAUS_CLIENT_SECRET")
