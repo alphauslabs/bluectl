@@ -34,7 +34,8 @@ https://alphauslabs.github.io/blueapidocs/ for the latest API reference.`,
 
 			home, _ := os.UserHomeDir()
 			cfgfile := filepath.Join(home, ".config", "alphaus", "config.toml")
-			if params.AuthProfile != "" {
+			_, err := os.Stat(cfgfile)
+			if err == nil && params.AuthProfile != "" {
 				b, err := os.ReadFile(cfgfile)
 				if err != nil {
 					logger.Error(err)
