@@ -23,9 +23,9 @@ var (
 		Long: bold("bluectl") + ` - Command line interface for Alphaus services.
 Copyright (c) 2021-2022 Alphaus Cloud, Inc. All rights reserved.
 
-The general form is bluectl <resource[ subresource...]> <action> [flags]. Most commands support the --raw-input
+The general form is ` + bold("bluectl <resource[ subresource...]> <action> [flags]") + `. Most commands support the ` + bold("--raw-input") + `
 flag to be always in sync with the current feature set of the API in case the built-in flags don't support all
-the possible input combinations. For beta APIs, we recommend you to use the --raw-input flag. See
+the possible input combinations. For beta APIs, we recommend you to use the ` + bold("--raw-input") + ` flag. See
 https://alphauslabs.github.io/blueapidocs/ for the latest API reference.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if params.CleanOut {
