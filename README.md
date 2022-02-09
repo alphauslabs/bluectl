@@ -10,7 +10,7 @@ $ brew install alphauslabs/tap/bluectl
 
 You can also download pre-built binaries from our [release](https://github.com/alphauslabs/bluectl/releases) page.
 
-To setup the environment variables required for authentication, check out this [page](https://alphauslabs.github.io/docs/blueapi/authentication/).
+Check out this [page](https://alphauslabs.github.io/docs/blueapi/authentication/) for information on authentication.
 
 You can also use the `--client-id` and `--client-secret` flags to set the values explicitly.
 
