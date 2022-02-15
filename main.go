@@ -93,7 +93,7 @@ func init() {
 		cmds.AccessTokenCmd(),
 		cmds.WhoAmICmd(),
 		cmds.OrgCmd(),
-		cmds.IamUsersCmd(),
+		cmds.IamCmd(),
 		cmds.IdpCmd(),
 		cmds.CrossAcctAccessCmd(),
 		cmds.CostCmd(),

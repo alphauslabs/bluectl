@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func ListIamUsersCmd() *cobra.Command {
+func IamUserListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List subusers",
@@ -141,7 +141,7 @@ func ListIamUsersCmd() *cobra.Command {
 	return cmd
 }
 
-func GetIamUserCmd() *cobra.Command {
+func IamUserGetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <id>",
 		Short: "Get subuser information",
@@ -242,9 +242,9 @@ func GetIamUserCmd() *cobra.Command {
 	return cmd
 }
 
-func IamUsersCmd() *cobra.Command {
+func IamUserCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "iamuser",
+		Use:   "user",
 		Short: "Subcommand for IAM user-related operations",
 		Long:  `Subcommand for IAM user-related operations.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -254,9 +254,24 @@ func IamUsersCmd() *cobra.Command {
 
 	cmd.Flags().SortFlags = false
 	cmd.AddCommand(
-		ListIamUsersCmd(),
-		GetIamUserCmd(),
+		IamUserListCmd(),
+		IamUserGetCmd(),
 	)
 
+	return cmd
+}
+
+func IamCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "iam",
+		Short: "Subcommand for IAM-related operations",
+		Long:  `Subcommand for IAM-related operations.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			logger.Info("see -h for more information")
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.AddCommand(IamUserCmd())
 	return cmd
 }
