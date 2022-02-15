@@ -25,7 +25,6 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-	"gopkg.in/yaml.v2"
 )
 
 func CostAwsAttributesGetCmd() *cobra.Command {
@@ -1593,21 +1592,115 @@ func CostAwsCalculationsScheduleListCmd() *cobra.Command {
 
 				fmt.Printf("%v", string(b))
 			default:
-				var m cost.ListCalculationsSchedulesResponse
-				b, _ := json.Marshal(resp)
-				err = yaml.Unmarshal(b, &m)
-				if err != nil {
-					fnerr(err)
-					return
+				table := tablewriter.NewWriter(os.Stdout)
+				table.SetAutoFormatHeaders(false)
+				table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+				table.SetColWidth(100)
+				table.SetBorder(false)
+				table.SetHeaderLine(false)
+				table.SetColumnSeparator("")
+				table.SetTablePadding("  ")
+				table.SetNoWhiteSpace(true)
+				table.SetHeader([]string{
+					"ID",
+					"SCHEDULE",
+					"NEXT_RUN",
+					"NOTIFICATION_CHANNEL",
+					"DRYRUN",
+				})
+
+				if len(resp.Schedules) > 0 {
+					table.Append([]string{
+						resp.Schedules[0].Id,
+						resp.Schedules[0].Schedule,
+						resp.Schedules[0].NextRun,
+						resp.Schedules[0].NotificationChannel,
+						fmt.Sprintf("%v", resp.Schedules[0].DryRun),
+					})
 				}
 
-				b, _ = yaml.Marshal(m)
-				fmt.Printf("%v", string(b))
+				table.Render()
 			}
 		},
 	}
 
 	cmd.Flags().SortFlags = false
+	return cmd
+}
+
+func CostAwsCalculationsScheduleCreateCmd() *cobra.Command {
+	var (
+		notifyChan string
+		dryrun     bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "create <cron>",
+		Short: "Create a calculation schedule",
+		Long: `Create a calculation schedule in cron format. At the moment, only one schedule is permitted
+per Ripple account. Enclose your input with either '' or "".
+
+For example, if you want to schedule your calculation every 3rd day of the month:
+  bluectl cost aws calculation schedule create "0 0 3 * *"
+
+You can get the notification channel id by using the command:
+  bluectl notification channels list`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			if len(args) == 0 {
+				fnerr(fmt.Errorf("id cannot be empty"))
+				return
+			}
+
+			ctx := context.Background()
+			con, err := grpcconn.GetConnection(ctx, grpcconn.CostService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := cost.NewClient(ctx, &cost.ClientOptions{Conn: con})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			r := cost.CreateCalculationsScheduleRequest{
+				Vendor:   "aws",
+				Schedule: args[0],
+				Force:    true, // default at the moment
+				DryRun:   dryrun,
+			}
+
+			if notifyChan != "" {
+				r.NotificationChannel = notifyChan
+			}
+
+			resp, err := client.CreateCalculationsSchedule(ctx, &r)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			logger.Info(resp)
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&notifyChan, "notification-channel", notifyChan, "notification channel id; if empty, creates a channel using your email")
+	cmd.Flags().BoolVar(&dryrun, "dryrun", dryrun, "if true, simulate notification only, no actual calculation")
 	return cmd
 }
 
@@ -1681,6 +1774,7 @@ func CostAwsCalculationsScheduleCmd() *cobra.Command {
 	cmd.Flags().SortFlags = false
 	cmd.AddCommand(
 		CostAwsCalculationsScheduleListCmd(),
+		CostAwsCalculationsScheduleCreateCmd(),
 		CostAwsCalculationsScheduleDeleteCmd(),
 	)
 
