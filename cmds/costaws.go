@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"gopkg.in/yaml.v2"
 )
 
 func CostAwsAttributesGetCmd() *cobra.Command {
@@ -1544,9 +1545,151 @@ triggered by updates to the CUR while 'invoice' means by a manual invoice reques
 	return cmd
 }
 
+func CostAwsCalculationsScheduleListCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List calculation schedules",
+		Long:  `List calculation schedules.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			ctx := context.Background()
+			con, err := grpcconn.GetConnection(ctx, grpcconn.CostService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := cost.NewClient(ctx, &cost.ClientOptions{Conn: con})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			resp, err := client.ListCalculationsSchedules(ctx, &cost.ListCalculationsSchedulesRequest{Vendor: "aws"})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			switch {
+			case params.OutFmt == "json":
+				b, _ := json.Marshal(resp)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				fmt.Printf("%v", string(b))
+			default:
+				var m cost.ListCalculationsSchedulesResponse
+				b, _ := json.Marshal(resp)
+				err = yaml.Unmarshal(b, &m)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+
+				b, _ = yaml.Marshal(m)
+				fmt.Printf("%v", string(b))
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	return cmd
+}
+
+func CostAwsCalculationsScheduleDeleteCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "rm <id|-|.>",
+		Short: "Delete calculation schedules",
+		Long:  `Delete calculation schedules. Accepts an id, or '-', or '.', which means all.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			if len(args) == 0 {
+				fnerr(fmt.Errorf("id cannot be empty"))
+				return
+			}
+
+			id := args[0]
+			if id == "." {
+				id = "*"
+			}
+
+			ctx := context.Background()
+			con, err := grpcconn.GetConnection(ctx, grpcconn.CostService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := cost.NewClient(ctx, &cost.ClientOptions{Conn: con})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			r := cost.DeleteCalculationsScheduleRequest{Vendor: "aws", Id: id}
+			_, err = client.DeleteCalculationsSchedule(ctx, &r)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			logger.Infof("[%v] deleted", args[0])
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	return cmd
+}
+
+func CostAwsCalculationsScheduleCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "schedule",
+		Short: "Subcommand for calculation schedules",
+		Long:  `Subcommand for calculation schedules.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			logger.Info("see -h for more information")
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.AddCommand(
+		CostAwsCalculationsScheduleListCmd(),
+		CostAwsCalculationsScheduleDeleteCmd(),
+	)
+
+	return cmd
+}
+
 func CostAwsCalculationsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "c10s",
+		Use:   "calculation",
 		Short: "Subcommand for AWS-specific calculations",
 		Long:  `Subcommand for AWS-specific calculations.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -1560,6 +1703,7 @@ func CostAwsCalculationsCmd() *cobra.Command {
 		CostAwsCalculationsListRunningCmd(),
 		CostAwsCalculationsListHistoryCmd(),
 		CostAwsCalculationsListAccountHistoryCmd(),
+		CostAwsCalculationsScheduleCmd(),
 	)
 
 	return cmd

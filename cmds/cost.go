@@ -16,10 +16,6 @@ func CostCmd() *cobra.Command {
 	}
 
 	cmd.Flags().SortFlags = false
-	cmd.AddCommand(
-		CostCalculationsCmd(),
-		CostAwsCmd(),
-	)
-
+	cmd.AddCommand(CostAwsCmd())
 	return cmd
 }

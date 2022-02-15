@@ -119,7 +119,7 @@ func ChannelsCmd() *cobra.Command {
 
 func NotificationCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "n10n",
+		Use:   "notification",
 		Short: "Subcommand for notifications",
 		Long:  `Subcommand for notifications.`,
 		Run: func(cmd *cobra.Command, args []string) {
