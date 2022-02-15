@@ -99,7 +99,7 @@ func init() {
 		cmds.CostCmd(),
 		cmds.AwsTagsCmd(),
 		cmds.AwsPayerCmd(),
-		cmds.AwsBillCmd(),
+		cmds.BillingCmd(),
 		cmds.NotificationCmd(),
 		cmds.OpsCmd(),
 		cmds.KvCmd(),
