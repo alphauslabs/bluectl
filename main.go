@@ -96,7 +96,7 @@ func init() {
 		cmds.IamUsersCmd(),
 		cmds.IdpCmd(),
 		cmds.CrossAcctAccessCmd(),
-		cmds.AwsCostCmd(),
+		cmds.CostCmd(),
 		cmds.AwsTagsCmd(),
 		cmds.AwsPayerCmd(),
 		cmds.AwsBillCmd(),

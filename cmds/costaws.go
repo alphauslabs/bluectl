@@ -25,16 +25,16 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-func AwsGetCostAttributesCmd() *cobra.Command {
+func CostAwsAttributesGetCmd() *cobra.Command {
 	var (
 		rawInput string
 		colWidth int
 	)
 
 	cmd := &cobra.Command{
-		Use:   "get-attrs",
-		Short: "Read AWS cost attributes",
-		Long: `Read AWS cost attributes. At the moment, we recommend you to use the --raw-input flag to take advantage
+		Use:   "get",
+		Short: "Get AWS cost attributes",
+		Long: `Get AWS cost attributes. At the moment, we recommend you to use the --raw-input flag to take advantage
 of the API's full features described in https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadCostAttributes.
 Note that this will invalidate all the other flags.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -299,7 +299,22 @@ Note that this will invalidate all the other flags.`,
 	return cmd
 }
 
-func AwsGetCostsCmd() *cobra.Command {
+func CostAwsAttributesCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "attributes",
+		Short: "AWS-specific cost attributes subcommand",
+		Long:  `AWS-specific cost attributes subcommand.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			logger.Info("see -h for more information")
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.AddCommand(CostAwsAttributesGetCmd())
+	return cmd
+}
+
+func CostAwsGetCmd() *cobra.Command {
 	var (
 		rawInput              string
 		costtype              string
@@ -662,7 +677,7 @@ Note that this will invalidate all the other flags.`,
 	return cmd
 }
 
-func AwsGetAdjustmentsCmd() *cobra.Command {
+func CostAwsAdjustmentsGetCmd() *cobra.Command {
 	var (
 		rawInput string
 		id       string
@@ -672,7 +687,7 @@ func AwsGetAdjustmentsCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "get-adjustments",
+		Use:   "get",
 		Short: "Read AWS adjustment costs",
 		Long: `Read AWS adjustment costs. At the moment, we recommend you to use the --raw-input flag to take advantage
 of the API's full features described in https://alphauslabs.github.io/blueapidocs/#/Cost/Cost_ReadAdjustments.
@@ -864,14 +879,29 @@ Note that this will invalidate all the other flags.`,
 	return cmd
 }
 
-func AwsCalculateCostsCmd() *cobra.Command {
+func CostAwsAdjustmentsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "adjustments",
+		Short: "AWS-specific cost adjustments subcommand",
+		Long:  `AWS-specific cost adjustments subcommand.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			logger.Info("see -h for more information")
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.AddCommand(CostAwsAdjustmentsGetCmd())
+	return cmd
+}
+
+func CostAwsCalculationsRunCmd() *cobra.Command {
 	var (
 		rawInput string
 		wait     bool
 	)
 
 	cmd := &cobra.Command{
-		Use:   "calculate",
+		Use:   "run",
 		Short: "Trigger an ondemand AWS costs calculation",
 		Long:  `Trigger an ondemand AWS costs calculation.`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -993,9 +1023,9 @@ func AwsCalculateCostsCmd() *cobra.Command {
 	return cmd
 }
 
-func AwsListRunningAcctsCmd() *cobra.Command {
+func CostAwsCalculationsListRunningCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ls-runaccts [month]",
+		Use:   "list-running [month]",
 		Short: "List accounts that are still processing",
 		Long: `List accounts that are still processing. The format for [month] is yyyymm.
 If [month] is not provided, it defaults to the current UTC month.`,
@@ -1148,15 +1178,15 @@ If [month] is not provided, it defaults to the current UTC month.`,
 	return cmd
 }
 
-func AwsGetCalculationHistoryCmd() *cobra.Command {
+func CostAwsCalculationsListHistoryCmd() *cobra.Command {
 	var (
 		rawInput string
 	)
 
 	cmd := &cobra.Command{
-		Use:   "get-calchistory",
-		Short: "Query AWS invoice calculation history",
-		Long:  `Query AWS invoice calculation history.`,
+		Use:   "list-history",
+		Short: "Query AWS calculation history",
+		Long:  `Query AWS calculation history.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -1335,11 +1365,11 @@ func AwsGetCalculationHistoryCmd() *cobra.Command {
 	return cmd
 }
 
-func AwsCostCmd() *cobra.Command {
+func CostAwsCalculationsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "awscost [id]",
-		Short: "Subcommand for AWS costs-related operations",
-		Long:  `Subcommand for AWS costs-related operations.`,
+		Use:   "c10s",
+		Short: "Subcommand for AWS-specific calculations",
+		Long:  `Subcommand for AWS-specific calculations.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			logger.Info("see -h for more information")
 		},
@@ -1347,12 +1377,30 @@ func AwsCostCmd() *cobra.Command {
 
 	cmd.Flags().SortFlags = false
 	cmd.AddCommand(
-		AwsGetCostAttributesCmd(),
-		AwsGetCostsCmd(),
-		AwsGetAdjustmentsCmd(),
-		AwsCalculateCostsCmd(),
-		AwsListRunningAcctsCmd(),
-		AwsGetCalculationHistoryCmd(),
+		CostAwsCalculationsRunCmd(),
+		CostAwsCalculationsListRunningCmd(),
+		CostAwsCalculationsListHistoryCmd(),
+	)
+
+	return cmd
+}
+
+func CostAwsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "aws",
+		Short: "AWS-specific cost-related subcommands",
+		Long:  `AWS-specific cost-related subcommands.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			logger.Info("see -h for more information")
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.AddCommand(
+		CostAwsAttributesCmd(),
+		CostAwsGetCmd(),
+		CostAwsAdjustmentsCmd(),
+		CostAwsCalculationsCmd(),
 	)
 
 	return cmd
