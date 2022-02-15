@@ -83,7 +83,7 @@ func ListChannelsCmd() *cobra.Command {
 
 				fmt.Printf("%v", string(b))
 			default:
-				var m map[string]interface{}
+				var m admin.ListNotificationChannelsResponse
 				b, _ := json.Marshal(resp)
 				err = yaml.Unmarshal(b, &m)
 				if err != nil {
