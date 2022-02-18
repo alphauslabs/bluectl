@@ -262,6 +262,10 @@ func IamUserCmd() *cobra.Command {
 }
 
 func IamIpFilterListCmd() *cobra.Command {
+	var (
+		withId bool
+	)
+
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List IP filter rules",
@@ -299,7 +303,10 @@ func IamIpFilterListCmd() *cobra.Command {
 				return
 			}
 
-			hdrs := []string{"ID", "TARGET", "TYPE", "SCOPE", "VALUE"}
+			hdrs := []string{"TYPE", "TARGET", "SCOPE", "VALUE"}
+			if withId {
+				hdrs = append(hdrs, "ID")
+			}
 
 			switch {
 			case params.OutFile != "" && params.OutFmt == "csv":
@@ -311,7 +318,7 @@ func IamIpFilterListCmd() *cobra.Command {
 				table.SetAutoFormatHeaders(false)
 				table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
 				table.SetAlignment(tablewriter.ALIGN_LEFT)
-				table.SetColWidth(100)
+				// table.SetColWidth(100)
 				table.SetBorder(false)
 				table.SetHeaderLine(false)
 				table.SetColumnSeparator("")
@@ -330,13 +337,18 @@ func IamIpFilterListCmd() *cobra.Command {
 						return
 					}
 
-					table.Append([]string{
-						v.Id,
-						v.Target,
+					add := []string{
 						v.Type,
+						v.Target,
 						v.Scope,
 						v.Value,
-					})
+					}
+
+					if withId {
+						add = append(add, v.Id)
+					}
+
+					table.Append(add)
 				}
 
 				table.Render()
@@ -345,6 +357,7 @@ func IamIpFilterListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().SortFlags = false
+	cmd.Flags().BoolVar(&withId, "with-id", withId, "if true, include id in output")
 	return cmd
 }
 
