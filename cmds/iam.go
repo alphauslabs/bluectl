@@ -261,6 +261,111 @@ func IamUserCmd() *cobra.Command {
 	return cmd
 }
 
+func IamIpFilterListCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List IP filter rules",
+		Long:  `List IP filter rules.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var ret int
+			defer func(r *int) {
+				if *r != 0 {
+					os.Exit(*r)
+				}
+			}(&ret)
+
+			fnerr := func(e error) {
+				logger.Error(e)
+				ret = 1
+			}
+
+			ctx := context.Background()
+			mycon, err := grpcconn.GetConnection(ctx, grpcconn.IamService)
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			client, err := iam.NewClient(ctx, &iam.ClientOptions{Conn: mycon})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			defer client.Close()
+			stream, err := client.ListIpFilters(ctx, &iam.ListIpFiltersRequest{})
+			if err != nil {
+				fnerr(err)
+				return
+			}
+
+			hdrs := []string{"ID", "TARGET", "TYPE", "SCOPE", "VALUE"}
+
+			switch {
+			case params.OutFile != "" && params.OutFmt == "csv":
+				fallthrough
+			case params.OutFmt == "json":
+				logger.Info("not supported at the moment")
+			default:
+				table := tablewriter.NewWriter(os.Stdout)
+				table.SetAutoFormatHeaders(false)
+				table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+				table.SetAlignment(tablewriter.ALIGN_LEFT)
+				table.SetColWidth(100)
+				table.SetBorder(false)
+				table.SetHeaderLine(false)
+				table.SetColumnSeparator("")
+				table.SetTablePadding("  ")
+				table.SetNoWhiteSpace(true)
+				table.SetHeader(hdrs)
+
+				for {
+					v, err := stream.Recv()
+					if err == io.EOF {
+						break
+					}
+
+					if err != nil {
+						fnerr(err)
+						return
+					}
+
+					table.Append([]string{
+						v.Id,
+						v.Target,
+						v.Type,
+						v.Scope,
+						v.Value,
+					})
+				}
+
+				table.Render()
+			}
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	return cmd
+}
+
+func IamIpFilterCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "ipfilter",
+		Short: "Subcommand for managing access via IP addrs",
+		Long:  `Subcommand for managing access via IP addrs.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			logger.Info("see -h for more information")
+		},
+	}
+
+	cmd.Flags().SortFlags = false
+	cmd.AddCommand(
+		IamIpFilterListCmd(),
+	)
+
+	return cmd
+}
+
 func IamCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iam",
@@ -272,6 +377,10 @@ func IamCmd() *cobra.Command {
 	}
 
 	cmd.Flags().SortFlags = false
-	cmd.AddCommand(IamUserCmd())
+	cmd.AddCommand(
+		IamUserCmd(),
+		IamIpFilterCmd(),
+	)
+
 	return cmd
 }
