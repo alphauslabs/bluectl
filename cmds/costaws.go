@@ -1367,17 +1367,16 @@ func CostAwsCalculationsListHistoryCmd() *cobra.Command {
 	return cmd
 }
 
-func CostAwsCalculationsListAccountHistoryCmd() *cobra.Command {
+func CostAwsCalculationsListDailyRunHistoryCmd() *cobra.Command {
 	var (
 		red   = color.New(color.FgRed).SprintFunc()
 		month string
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list-accthistory [yyyymm]",
-		Short: "Query AWS calculation history for all accounts",
-		Long: `Query AWS calculation history for all accounts.
-The default output format is:
+		Use:   "list-runhistory [yyyymm] [groupId]",
+		Short: "Query AWS daily run history for all accounts",
+		Long: `Query AWS daily run history for all accounts. The default output format is:
 
 billingInternalId/billingGroupId (yyyymm):
   accountId: timestamp=timestamp, trigger='cur|invoice'
@@ -1408,6 +1407,11 @@ triggered by updates to the CUR while 'invoice' means by a manual invoice reques
 				}
 			}
 
+			var groupId string
+			if len(args) >= 2 {
+				groupId = args[1]
+			}
+
 			ctx := context.Background()
 			mycon, err := grpcconn.GetConnection(ctx, grpcconn.BillingService)
 			if err != nil {
@@ -1422,8 +1426,9 @@ triggered by updates to the CUR while 'invoice' means by a manual invoice reques
 			}
 
 			defer client.Close()
-			stream, err := client.ListAwsCalculationHistory(ctx, &billing.ListAwsCalculationHistoryRequest{
-				Month: month,
+			stream, err := client.ListAwsDailyRunHistory(ctx, &billing.ListAwsDailyRunHistoryRequest{
+				Month:   month,
+				GroupId: groupId,
 			})
 
 			if err != nil {
@@ -1796,7 +1801,7 @@ func CostAwsCalculationsCmd() *cobra.Command {
 		CostAwsCalculationsRunCmd(),
 		CostAwsCalculationsListRunningCmd(),
 		CostAwsCalculationsListHistoryCmd(),
-		CostAwsCalculationsListAccountHistoryCmd(),
+		CostAwsCalculationsListDailyRunHistoryCmd(),
 		CostAwsCalculationsScheduleCmd(),
 	)
 
