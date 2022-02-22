@@ -1460,6 +1460,7 @@ triggered by updates to the CUR while 'invoice' means by a manual invoice reques
 						"account",
 						"timestamp",
 						"trigger",
+						"after",
 					})
 
 					for {
@@ -1479,14 +1480,40 @@ triggered by updates to the CUR while 'invoice' means by a manual invoice reques
 
 						for _, acct := range v.Accounts {
 							if len(acct.History) > 0 {
+								var itr int
+								var updated bool // after invoice
 								for _, h := range acct.History {
-									row := []string{
-										v.BillingInternalId,
-										v.BillingGroupId,
-										v.Month,
-										acct.AccountId,
-										h.Timestamp,
-										h.Trigger,
+									itr++
+									if h.Trigger == "invoice" {
+										if itr > 1 {
+											updated = true
+										}
+										break
+									}
+								}
+
+								for _, h := range acct.History {
+									var row []string
+									if updated && h.Trigger == "invoice" {
+										row = []string{
+											v.BillingInternalId,
+											v.BillingGroupId,
+											v.Month,
+											acct.AccountId,
+											h.Timestamp,
+											h.Trigger,
+											"yes",
+										}
+									} else {
+										row = []string{
+											v.BillingInternalId,
+											v.BillingGroupId,
+											v.Month,
+											acct.AccountId,
+											h.Timestamp,
+											h.Trigger,
+											"",
+										}
 									}
 
 									logger.Infof("%v --> %v", row, params.OutFile)
@@ -1531,7 +1558,7 @@ triggered by updates to the CUR while 'invoice' means by a manual invoice reques
 
 							for _, h := range acct.History {
 								if updated && h.Trigger == "invoice" {
-									fmt.Printf(red("  %v: timestamp=%v, trigger=%v\n"),
+									fmt.Printf(red("  %v: timestamp=%v, trigger=%v, drift\n"),
 										acct.AccountId, h.Timestamp, h.Trigger)
 								} else {
 									fmt.Printf("  %v: timestamp=%v, trigger=%v\n",
