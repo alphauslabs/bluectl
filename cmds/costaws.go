@@ -1374,7 +1374,7 @@ func CostAwsCalculationsListDailyRunHistoryCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "list-runhistory [yyyymm] [groupId]",
+		Use:   "list-runhistory [yyyymm] [billingInternalId]",
 		Short: "Query AWS daily run history for all accounts",
 		Long: `Query AWS daily run history for all accounts. The default output format is:
 
