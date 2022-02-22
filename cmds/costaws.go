@@ -1379,7 +1379,7 @@ func CostAwsCalculationsListDailyRunHistoryCmd() *cobra.Command {
 		Long: `Query AWS daily run history for all accounts. The default output format is:
 
 billingInternalId/billingGroupId (yyyymm):
-  accountId: timestamp=timestamp, trigger='cur|invoice'
+  accountId: timestamp=timestamp, trigger='cur|invoice[, after=true]'
 
 Timestamps are ordered with the topmost as most recent. 'cur'-triggered means this calculation was
 triggered by updates to the CUR while 'invoice' means by a manual invoice request.`,
@@ -1493,8 +1493,12 @@ triggered by updates to the CUR while 'invoice' means by a manual invoice reques
 								}
 
 								for _, h := range acct.History {
-									var row []string
 									if updated && h.Trigger == "invoice" {
+										updated = false
+									}
+
+									var row []string
+									if updated && h.Trigger != "invoice" {
 										row = []string{
 											v.BillingInternalId,
 											v.BillingGroupId,
@@ -1558,7 +1562,11 @@ triggered by updates to the CUR while 'invoice' means by a manual invoice reques
 
 							for _, h := range acct.History {
 								if updated && h.Trigger == "invoice" {
-									fmt.Printf(red("  %v: timestamp=%v, trigger=%v, drift\n"),
+									updated = false
+								}
+
+								if updated && h.Trigger != "invoice" {
+									fmt.Printf(red("  %v: timestamp=%v, trigger=%v, after=true\n"),
 										acct.AccountId, h.Timestamp, h.Trigger)
 								} else {
 									fmt.Printf("  %v: timestamp=%v, trigger=%v\n",
