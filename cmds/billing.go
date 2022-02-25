@@ -25,7 +25,8 @@ func BillingAwsDriftCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "drift [yyyymm] [billingInternalId]",
 		Short: "Query differences, if any, between your AWS invoice and latest costs",
-		Long:  `Query differences, if any, between your AWS invoice and latest costs.`,
+		Long: `Query differences, if any, between your AWS invoice and latest costs. If [billingInternalId] is empty,
+all billing groups that have diffs will be returned.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
