@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/bluectl/cmds"
+	"github.com/alphauslabs/bluectl/cmds/cost"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/fatih/color"
@@ -96,7 +97,7 @@ func init() {
 		cmds.IamCmd(),
 		cmds.IdpCmd(),
 		cmds.CrossAcctAccessCmd(),
-		cmds.CostCmd(),
+		cost.CostCmd(),
 		cmds.AwsTagsCmd(),
 		cmds.AwsPayerCmd(),
 		cmds.BillingCmd(),
