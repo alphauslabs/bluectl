@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/alphauslabs/blue-sdk-go/cost/v1"
+	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/spf13/cobra"
@@ -70,7 +71,13 @@ func ListCmd() *cobra.Command {
 					return
 				}
 
-				logger.Info(v)
+				switch params.OutFmt {
+				case "json":
+					b, _ := json.Marshal(v)
+					logger.Info(string(b))
+				default:
+					logger.Info(v)
+				}
 			}
 		},
 	}
