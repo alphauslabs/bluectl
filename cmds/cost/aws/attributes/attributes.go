@@ -192,6 +192,10 @@ Note that this will invalidate all the other flags.`,
 							refCols[i].enable = true
 						}
 					}
+				} else {
+					for i := range refCols {
+						refCols[i].enable = true
+					}
 				}
 
 				stream, err = client.ReadCostAttributes(ctx, &in)
