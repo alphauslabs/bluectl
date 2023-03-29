@@ -202,28 +202,34 @@ func get(cmd *cobra.Command, args []string, fl *Flags) {
 			in.Vendor = "aws"
 		}
 
-		if in.AwsOptions != nil {
-			if in.AwsOptions.GroupByColumns != "" {
-				refCols[0].enable = true // group
-				refCols[1].enable = true // account
-				gbcs := strings.Split(in.AwsOptions.GroupByColumns, ",")
-				for _, gbc := range gbcs {
-					for i, rc := range refCols {
-						if rc.name == gbc {
-							refCols[i].enable = true
-							break
-						}
+		if in.AwsOptions == nil {
+			// Let's default to monthly services.
+			in.AwsOptions = &cost.ReadCostsRequestAwsOptions{
+				GroupByColumns: "productCode",
+				GroupByMonth:   true,
+			}
+		}
+
+		if in.AwsOptions.GroupByColumns != "" {
+			refCols[0].enable = true // group
+			refCols[1].enable = true // account
+			gbcs := strings.Split(in.AwsOptions.GroupByColumns, ",")
+			for _, gbc := range gbcs {
+				for i, rc := range refCols {
+					if rc.name == gbc {
+						refCols[i].enable = true
+						break
 					}
 				}
-			} else {
-				for i := range refCols {
-					refCols[i].enable = true
-				}
 			}
-
-			refCols[13].enable = in.AwsOptions.IncludeTags
-			refCols[14].enable = in.AwsOptions.IncludeCostCategories
+		} else {
+			for i := range refCols {
+				refCols[i].enable = true
+			}
 		}
+
+		refCols[13].enable = in.AwsOptions.IncludeTags
+		refCols[14].enable = in.AwsOptions.IncludeCostCategories
 
 		stream, err = client.ReadCosts(ctx, &in)
 		if err != nil {
