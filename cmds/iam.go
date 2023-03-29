@@ -227,10 +227,17 @@ func IamUserGetCmd() *cobra.Command {
 				table.SetNoWhiteSpace(true)
 				table.SetHeader(hdrs)
 
+				first := true
 				for k, v := range resp.Metadata {
 					m := fmt.Sprintf("%v: %v", k, v)
-					row := []string{resp.Id, resp.Parent, m}
-					table.Append(row)
+					if first {
+						row := []string{resp.Id, resp.Parent, m}
+						table.Append(row)
+						first = false
+					} else {
+						row := []string{"-", "-", m}
+						table.Append(row)
+					}
 				}
 
 				table.Render()
