@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	_ "github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/bluectl/cmds"
@@ -17,17 +19,20 @@ import (
 
 var (
 	bold = color.New(color.Bold).SprintFunc()
+	year = func() string {
+		return fmt.Sprintf("%v", time.Now().Year())
+	}
 
 	rootCmd = &cobra.Command{
 		Use:   "bluectl",
 		Short: bold("bluectl") + " - Command line interface for Alphaus services",
 		Long: bold("bluectl") + ` - Command line interface for Alphaus services.
-Copyright (c) 2021-2022 Alphaus Cloud, Inc. All rights reserved.
+Copyright (c) 2021-` + year() + ` Alphaus Cloud, Inc. All rights reserved.
 
-The general form is ` + bold("bluectl <resource[ subresource...]> <action> [flags]") + `. Most commands support the ` + bold("--raw-input") + `
-flag to be always in sync with the current feature set of the API in case the built-in flags don't support all
-the possible input combinations. For beta APIs, we recommend you to use the ` + bold("--raw-input") + ` flag. See
-https://alphauslabs.github.io/blueapidocs/ for the latest API reference.`,
+The general form is ` + bold("bluectl <resource[ subresource...]> <action> [flags]") + `. Most commands support
+the ` + bold("--raw-input") + ` flag to be always in sync with the current feature set of the API in case the
+built-in flags don't support all the possible input combinations yet. For beta APIs, we recommend
+you to use the ` + bold("--raw-input") + ` flag. See https://labs.alphaus.cloud/blueapidocs/ for the latest API reference.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if params.CleanOut {
 				logger.SetPrefix(logger.PrefixNone)

@@ -19,8 +19,8 @@ func AccessTokenCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "token",
-		Short: "Get access token for Ripple/Wave(Pro) authentication.",
-		Long:  `Get access token for Ripple/Wave(Pro) authentication. See global flags for more information on the default environment variables.`,
+		Short: "Get access token for Ripple/Wave[Pro] authentication",
+		Long:  `Get access token for Ripple/Wave[Pro] authentication. See global flags for more information on the default environment variables.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var s *session.Session
 			var o []session.Option
