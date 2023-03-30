@@ -230,7 +230,6 @@ func get(cmd *cobra.Command, args []string, fl *Flags) {
 
 		refCols[13].enable = in.AwsOptions.IncludeTags
 		refCols[14].enable = in.AwsOptions.IncludeCostCategories
-
 		stream, err = client.ReadCosts(ctx, &in)
 		if err != nil {
 			fnerr(err)
@@ -295,17 +294,31 @@ func get(cmd *cobra.Command, args []string, fl *Flags) {
 		}
 	}
 
+	colsAlign := []int{}
+	for _, col := range cols {
+		switch {
+		case col == "USAGE":
+			fallthrough
+		case col == "COST":
+			colsAlign = append(colsAlign, tablewriter.ALIGN_RIGHT)
+		default:
+			colsAlign = append(colsAlign, tablewriter.ALIGN_LEFT)
+		}
+	}
+
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAutoFormatHeaders(false)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	// table.SetAutoFormatHeaders(false)
+	// table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	// table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.SetColWidth(fl.ColWidth)
 	table.SetBorder(false)
 	table.SetHeaderLine(false)
 	table.SetColumnSeparator("")
 	table.SetTablePadding("  ")
 	table.SetNoWhiteSpace(true)
-	table.SetHeader(cols)
+	// table.SetHeader(cols)
+	table.SetColumnAlignment(colsAlign)
+	table.Append(cols)
 	var render bool
 
 	for {
