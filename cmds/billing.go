@@ -167,6 +167,15 @@ the previous month.`,
 					"DIFF",
 				})
 
+				var totalSnap, totalCurr, totalDiff float64
+				vf := func(f float64) string {
+					if f == 0 {
+						return "%f"
+					} else {
+						return "%.9f"
+					}
+				}
+
 				for {
 					v, err := stream.Recv()
 					if err == io.EOF {
@@ -176,14 +185,6 @@ the previous month.`,
 					if err != nil {
 						fnerr(err)
 						return
-					}
-
-					vf := func(f float64) string {
-						if f == 0 {
-							return "%f"
-						} else {
-							return "%.9f"
-						}
 					}
 
 					row := []string{
@@ -196,11 +197,25 @@ the previous month.`,
 						fmt.Sprintf(vf(v.Diff), math.Abs(v.Diff)),
 					}
 
+					totalSnap += v.Snapshot
+					totalCurr += v.Current
+					totalDiff += math.Abs(v.Diff)
+
 					fmt.Printf("\033[2K\rrecv:%v...", row)
 					table.Append(row)
 				}
 
 				fmt.Printf("\033[2K\r") // reset cursor
+				table.Append([]string{
+					"",
+					"",
+					"",
+					"TOTAL",
+					fmt.Sprintf(vf(totalSnap), totalSnap),
+					fmt.Sprintf(vf(totalCurr), totalCurr),
+					fmt.Sprintf(vf(totalDiff), totalDiff),
+				})
+
 				table.Render()
 			}
 		},
