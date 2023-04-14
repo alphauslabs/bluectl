@@ -26,7 +26,8 @@ func BillingAwsDriftCmd() *cobra.Command {
 		Use:   "drift [yyyymm] [billingInternalId]",
 		Short: "Query differences, if any, between your AWS invoice and latest costs",
 		Long: `Query differences, if any, between your AWS invoice and latest costs. If [billingInternalId] is empty,
-all billing groups that have diffs will be returned.`,
+all billing groups that have diffs will be returned. If [yyyymm] is not provided, it will default to
+the previous month.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var ret int
 			defer func(r *int) {
@@ -40,7 +41,7 @@ all billing groups that have diffs will be returned.`,
 				ret = 1
 			}
 
-			month = time.Now().UTC().Format("200601")
+			month = time.Now().UTC().AddDate(0, -1, 0).Format("200601")
 			if len(args) >= 1 {
 				mm, err := time.Parse("200601", args[0])
 				if err != nil {
@@ -156,7 +157,7 @@ all billing groups that have diffs will be returned.`,
 				table.SetColumnSeparator("")
 				table.SetTablePadding("  ")
 				table.SetNoWhiteSpace(true)
-				table.SetHeader([]string{
+				table.Append([]string{
 					"INTERNAL_ID",
 					"BILLING_GROUP_ID",
 					"ACCOUNT",
