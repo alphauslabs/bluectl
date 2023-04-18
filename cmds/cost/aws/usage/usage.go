@@ -320,6 +320,7 @@ func get(cmd *cobra.Command, args []string, fl *Flags) {
 	table.SetColumnAlignment(colsAlign)
 	table.Append(cols)
 	var render bool
+	var totalUsage, totalCost float64
 
 	for {
 		v, err := stream.Recv()
@@ -354,6 +355,8 @@ func get(cmd *cobra.Command, args []string, fl *Flags) {
 			refCols[14].val = v.Aws.CostCategories
 			refCols[15].val = v.Aws.Usage
 			refCols[16].val = v.Aws.Cost
+			totalUsage += v.Aws.Usage
+			totalCost += v.Aws.Cost
 			row := []string{}
 			for _, rc := range refCols {
 				if rc.enable {
@@ -372,6 +375,19 @@ func get(cmd *cobra.Command, args []string, fl *Flags) {
 	}
 
 	if render {
+		// Add the total line.
+		totalLine := []string{}
+		if (len(cols) - 3) > 0 {
+			for i := 0; i < len(cols)-3; i++ {
+				totalLine = append(totalLine, "")
+			}
+		}
+
+		totalLine = append(totalLine, "TOTAL")
+		totalLine = append(totalLine, fmt.Sprintf("%.10f", totalUsage))
+		totalLine = append(totalLine, fmt.Sprintf("%.10f", totalCost))
+		table.Append(totalLine)
+
 		fmt.Printf("\033[2K\r") // reset cursor
 		table.Render()
 	}
