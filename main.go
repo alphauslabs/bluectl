@@ -108,7 +108,6 @@ func init() {
 		cmds.BillingCmd(),
 		cmds.NotificationCmd(),
 		cmds.OpsCmd(),
-		cmds.KvCmd(),
 	)
 }
 
