@@ -74,6 +74,7 @@ func ListCmd() *cobra.Command {
 				table.SetHeader([]string{
 					"ID",
 					"SCHEDULE",
+					"SCHEDULE_MACRO",
 					"NEXT_RUN",
 					"NOTIFICATION_CHANNEL",
 					"DRYRUN",
@@ -83,6 +84,7 @@ func ListCmd() *cobra.Command {
 					table.Append([]string{
 						resp.Schedules[0].Id,
 						resp.Schedules[0].Schedule,
+						resp.Schedules[0].ScheduleMacro,
 						resp.Schedules[0].NextRun,
 						resp.Schedules[0].NotificationChannel,
 						fmt.Sprintf("%v", resp.Schedules[0].DryRun),
@@ -175,7 +177,8 @@ You can get the notification channel id by using the command:
 				return
 			}
 
-			logger.Info(resp)
+			b, _ := json.Marshal(resp)
+			logger.Info(string(b))
 		},
 	}
 
