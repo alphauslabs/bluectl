@@ -100,6 +100,7 @@ func ListCmd() *cobra.Command {
 
 func CreateCmd() *cobra.Command {
 	var (
+		rawInput   string
 		notifyChan string
 		dryrun     bool
 	)
@@ -128,7 +129,7 @@ You can get the notification channel id by using the command:
 				ret = 1
 			}
 
-			if len(args) == 0 {
+			if len(args) == 0 && rawInput == "" {
 				fnerr(fmt.Errorf("id cannot be empty"))
 				return
 			}
@@ -147,15 +148,25 @@ You can get the notification channel id by using the command:
 			}
 
 			defer client.Close()
-			r := cost.CreateCalculationsScheduleRequest{
-				Vendor:   "aws",
-				Schedule: args[0],
-				Force:    true, // default at the moment
-				DryRun:   dryrun,
-			}
+			var r cost.CreateCalculationsScheduleRequest
+			switch {
+			case rawInput != "":
+				err := json.Unmarshal([]byte(rawInput), &r)
+				if err != nil {
+					fnerr(err)
+					return
+				}
+			default:
+				r = cost.CreateCalculationsScheduleRequest{
+					Vendor:   "aws",
+					Schedule: args[0],
+					Force:    true, // default at the moment
+					DryRun:   dryrun,
+				}
 
-			if notifyChan != "" {
-				r.NotificationChannel = notifyChan
+				if notifyChan != "" {
+					r.NotificationChannel = notifyChan
+				}
 			}
 
 			resp, err := client.CreateCalculationsSchedule(ctx, &r)
@@ -169,6 +180,7 @@ You can get the notification channel id by using the command:
 	}
 
 	cmd.Flags().SortFlags = false
+	cmd.Flags().StringVar(&rawInput, "raw-input", rawInput, "raw JSON input; see https://labs.alphaus.cloud/blueapidocs/#/Cost/Cost_CreateCalculationsSchedule")
 	cmd.Flags().StringVar(&notifyChan, "notification-channel", notifyChan, "notification channel id; if empty, creates a channel using your email")
 	cmd.Flags().BoolVar(&dryrun, "dryrun", dryrun, "if true, simulate notification only, no actual calculation")
 	return cmd
