@@ -82,11 +82,16 @@ func ListCmd() *cobra.Command {
 				})
 
 				if len(resp.Schedules) > 0 {
+					tm := resp.Schedules[0].TargetMonth
+					if tm == "" {
+						tm = "-"
+					}
+
 					table.Append([]string{
 						resp.Schedules[0].Id,
 						resp.Schedules[0].Schedule,
 						resp.Schedules[0].ScheduleMacro,
-						resp.Schedules[0].TargetMonth,
+						tm,
 						resp.Schedules[0].NextRun,
 						resp.Schedules[0].NotificationChannel,
 						fmt.Sprintf("%v", resp.Schedules[0].DryRun),
