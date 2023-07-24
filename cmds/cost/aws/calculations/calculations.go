@@ -15,6 +15,7 @@ import (
 	"github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/blue-sdk-go/billing/v1"
 	"github.com/alphauslabs/blue-sdk-go/cost/v1"
+	"github.com/alphauslabs/blue-sdk-go/protos"
 	"github.com/alphauslabs/bluectl/cmds/cost/aws/calculations/schedule"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
@@ -25,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func RunCmd() *cobra.Command {
@@ -64,7 +66,7 @@ func RunCmd() *cobra.Command {
 			}
 
 			defer client.Close()
-			var resp *api.Operation
+			var resp *protos.Operation
 
 			switch {
 			case rawInput != "":
@@ -316,6 +318,16 @@ func ListHistoryCmd() *cobra.Command {
 		rawInput string
 	)
 
+	// Same copy in backend
+	type CalculateCostsMeta struct {
+		OrgId    string   `json:"orgId"`
+		Month    string   `json:"month"`
+		Status   string   `json:"status"`
+		GroupIds []string `json:"groupIds"`
+		Created  string   `json:"created"`
+		Updated  string   `json:"updated"`
+	}
+
 	cmd := &cobra.Command{
 		Use:   "list-history",
 		Short: "Query AWS calculation history",
@@ -418,29 +430,30 @@ func ListHistoryCmd() *cobra.Command {
 			}
 
 			for _, op := range resp.Aws.Operations {
-				var meta api.OperationAwsCalculateCostsMetadataV1
-				anypb.UnmarshalTo(op.Metadata, &meta, proto.UnmarshalOptions{})
+				var sm structpb.Struct
+				op.Metadata.UnmarshalTo(&sm)
+				meta := sm.AsMap()
 				var result string
 				switch op.Result.(type) {
-				case *api.Operation_Response:
-					var res api.KeyValue
-					tres := op.Result.(*api.Operation_Response)
-					anypb.UnmarshalTo(tres.Response, &res, proto.UnmarshalOptions{})
-					result = fmt.Sprintf("%v", res.Value)
-				case *api.Operation_Error:
-					terr := op.Result.(*api.Operation_Error)
+				case *protos.Operation_Response:
+					result = "success"
+				case *protos.Operation_Error:
+					terr := op.Result.(*protos.Operation_Error)
 					result = terr.Error.String()
 				}
 
 				switch {
 				case params.OutFmt == "csv" && params.OutFile != "":
+					b, _ := json.Marshal(meta)
+					var cm CalculateCostsMeta
+					json.Unmarshal(b, &cm)
 					wf.Write([]string{
 						op.Name,
-						meta.Month,
-						strings.Join(meta.GroupIds, ","),
-						meta.Updated,
-						meta.Created,
-						meta.Status,
+						cm.Month,
+						strings.Join(cm.GroupIds, ","),
+						cm.Updated,
+						cm.Created,
+						cm.Status,
 						fmt.Sprintf("%v", op.Done),
 						result,
 					})
@@ -456,9 +469,9 @@ func ListHistoryCmd() *cobra.Command {
 
 					// Make result more readable.
 					switch op.Result.(type) {
-					case *api.Operation_Response:
+					case *protos.Operation_Response:
 						var res api.KeyValue
-						tres := op.Result.(*api.Operation_Response)
+						tres := op.Result.(*protos.Operation_Response)
 						anypb.UnmarshalTo(tres.Response, &res, proto.UnmarshalOptions{})
 						v := m["Result"]
 						vv := v.(map[string]interface{})
@@ -470,13 +483,16 @@ func ListHistoryCmd() *cobra.Command {
 					fmt.Println(string(b))
 				default:
 					render = true
+					b, _ := json.Marshal(meta)
+					var cm CalculateCostsMeta
+					json.Unmarshal(b, &cm)
 					table.Append([]string{
 						op.Name,
-						meta.Month,
-						strings.Join(meta.GroupIds, ","),
-						meta.Updated,
-						meta.Created,
-						meta.Status,
+						cm.Month,
+						strings.Join(cm.GroupIds, ","),
+						cm.Updated,
+						cm.Created,
+						cm.Status,
 						fmt.Sprintf("%v", op.Done),
 						result,
 					})

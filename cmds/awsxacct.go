@@ -11,14 +11,11 @@ import (
 	"syscall"
 
 	"github.com/alphauslabs/blue-sdk-go/admin/v1"
-	"github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
 	"github.com/alphauslabs/bluectl/pkg/ops"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func CreateDefaultCostAccessInfo() *cobra.Command {
@@ -351,12 +348,6 @@ update to the CloudFormation template.`,
 
 						if op != nil {
 							if op.Done {
-								if v, ok := op.Result.(*api.Operation_Response); ok {
-									var r api.KeyValue
-									anypb.UnmarshalTo(v.Response, &r, proto.UnmarshalOptions{})
-									logger.Infof("%v=%v", r.Key, r.Value)
-								}
-
 								done <- struct{}{}
 								return
 							}
