@@ -311,6 +311,7 @@ func get(cmd *cobra.Command, args []string, fl *Flags) {
 	// table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
 	// table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.SetColWidth(fl.ColWidth)
+	table.SetAutoWrapText(false)
 	table.SetBorder(false)
 	table.SetHeaderLine(false)
 	table.SetColumnSeparator("")
