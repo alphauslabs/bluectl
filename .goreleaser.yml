@@ -28,6 +28,7 @@ brews:
   name: bluectl
   homepage: "https://github.com/alphauslabs/bluectl"
   description: "The official command line interface for Alphaus services."
+  directory: Formula
   install: |
     bin.install "bluectl"
   test: |
