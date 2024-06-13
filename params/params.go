@@ -1,6 +1,8 @@
 package params
 
 var (
+	Version string
+
 	AuthProfile  string
 	AuthUrl      string
 	ClientId     string

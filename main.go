@@ -18,6 +18,10 @@ import (
 )
 
 var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+
 	bold = color.New(color.Bold).SprintFunc()
 	year = func() string {
 		return fmt.Sprintf("%v", time.Now().Year())
@@ -34,6 +38,7 @@ the ` + bold("--raw-input") + ` flag to be always in sync with the current featu
 built-in flags don't support all the possible input combinations yet. For beta APIs, we recommend
 you to use the ` + bold("--raw-input") + ` flag. See https://labs.alphaus.cloud/blueapidocs/ for the latest API reference.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			params.Version = version
 			if params.CleanOut {
 				logger.SetPrefix(logger.PrefixNone)
 			}
@@ -108,6 +113,7 @@ func init() {
 		cmds.BillingCmd(),
 		cmds.NotificationCmd(),
 		cmds.OpsCmd(),
+		cmds.VersionCmd(),
 	)
 }
 
