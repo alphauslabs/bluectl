@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	protosinternal "github.com/alphauslabs/blue-internal-go/protos"
 	"github.com/alphauslabs/blue-sdk-go/cost/v1"
-	"github.com/alphauslabs/blue-sdk-go/protos"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"github.com/alphauslabs/bluectl/pkg/logger"
@@ -457,7 +457,7 @@ func ImportCursCmd() *cobra.Command {
 			}
 
 			defer client.Close()
-			var resp *protos.Operation
+			var resp *protosinternal.Operation
 
 			switch {
 			case rawInput != "":
