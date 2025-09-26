@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
+	protosinternal "github.com/alphauslabs/blue-internal-go/protos"
 	"github.com/alphauslabs/blue-sdk-go/api"
 	"github.com/alphauslabs/blue-sdk-go/billing/v1"
 	"github.com/alphauslabs/blue-sdk-go/cost/v1"
-	"github.com/alphauslabs/blue-sdk-go/protos"
 	"github.com/alphauslabs/bluectl/cmds/cost/aws/calculations/schedule"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
@@ -66,7 +66,7 @@ func RunCmd() *cobra.Command {
 			}
 
 			defer client.Close()
-			var resp *protos.Operation
+			var resp *protosinternal.Operation
 
 			switch {
 			case rawInput != "":
@@ -435,10 +435,10 @@ func ListHistoryCmd() *cobra.Command {
 				meta := sm.AsMap()
 				var result string
 				switch op.Result.(type) {
-				case *protos.Operation_Response:
+				case *protosinternal.Operation_Response:
 					result = "success"
-				case *protos.Operation_Error:
-					terr := op.Result.(*protos.Operation_Error)
+				case *protosinternal.Operation_Error:
+					terr := op.Result.(*protosinternal.Operation_Error)
 					result = terr.Error.String()
 				}
 
@@ -469,9 +469,9 @@ func ListHistoryCmd() *cobra.Command {
 
 					// Make result more readable.
 					switch op.Result.(type) {
-					case *protos.Operation_Response:
+					case *protosinternal.Operation_Response:
 						var res api.KeyValue
-						tres := op.Result.(*protos.Operation_Response)
+						tres := op.Result.(*protosinternal.Operation_Response)
 						anypb.UnmarshalTo(tres.Response, &res, proto.UnmarshalOptions{})
 						v := m["Result"]
 						vv := v.(map[string]interface{})
