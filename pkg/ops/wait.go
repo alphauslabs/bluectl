@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	protosinternal "github.com/alphauslabs/blue-internal-go/protos"
 	"github.com/alphauslabs/blue-sdk-go/operations/v1"
+	"github.com/alphauslabs/blue-sdk-go/protos"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
@@ -16,7 +16,7 @@ type WaitForOperationInput struct {
 	Client *operations.GrpcClient // optional
 }
 
-func WaitForOperation(ctx context.Context, in WaitForOperationInput) (*protosinternal.Operation, error) {
+func WaitForOperation(ctx context.Context, in WaitForOperationInput) (*protos.Operation, error) {
 	if in.Name == "" {
 		return nil, fmt.Errorf("in.Name cannot be empty")
 	}
@@ -43,7 +43,7 @@ func WaitForOperation(ctx context.Context, in WaitForOperationInput) (*protosint
 	}
 
 	type data struct {
-		op  *protosinternal.Operation
+		op  *protos.Operation
 		err error
 	}
 

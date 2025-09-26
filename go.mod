@@ -3,7 +3,7 @@ module github.com/alphauslabs/bluectl
 go 1.25
 
 require (
-	github.com/alphauslabs/blue-sdk-go v0.77.52
+	github.com/alphauslabs/blue-sdk-go v0.71.3
 	github.com/fatih/color v1.18.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
@@ -17,7 +17,6 @@ require (
 )
 
 require (
-	github.com/alphauslabs/blue-internal-go v0.17.21
 	github.com/pelletier/go-toml/v2 v2.0.0-beta.6
 	golang.org/x/term v0.23.0
 	gopkg.in/yaml.v2 v2.4.0

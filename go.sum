@@ -1,7 +1,5 @@
-github.com/alphauslabs/blue-internal-go v0.17.21 h1:eUSixRV9Ru2hRQT3C7HKdgEdsaTa2QFsd06Pa7NFRy0=
-github.com/alphauslabs/blue-internal-go v0.17.21/go.mod h1:j4Rw2iA0O8e82bSXls374gXQYlrQYyiNCrbOgzJ0AO8=
-github.com/alphauslabs/blue-sdk-go v0.77.52 h1:XNho+WdtuPqamRoCXrlb1/IG6qfOuKKm+p5/wbJz8KA=
-github.com/alphauslabs/blue-sdk-go v0.77.52/go.mod h1:x4bitWhgq29y13ANterdjsEMn9eWUmcTL7zX7WuW52s=
+github.com/alphauslabs/blue-sdk-go v0.71.3 h1:zGXNoTh1lw8z3yESJYWjDwfcR84mSKDdFTkfRTogqO4=
+github.com/alphauslabs/blue-sdk-go v0.71.3/go.mod h1:rXvLVEALD6OCGOEilelpARFLXhxVGWj1FN1xQ8/yHqY=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
