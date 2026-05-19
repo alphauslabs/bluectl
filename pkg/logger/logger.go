@@ -26,7 +26,7 @@ var (
 	info  = log.New(os.Stdout, "", log.LstdFlags)
 	fail  = log.New(os.Stdout, "", log.LstdFlags)
 
-	pfx int32
+	pfx atomic.Int32
 )
 
 const (
@@ -52,7 +52,7 @@ func SetPrefix(p ...int32) {
 		fail.SetFlags(log.LstdFlags)
 	}
 
-	atomic.StoreInt32(&pfx, p[0])
+	pfx.Store(p[0])
 }
 
 func SetNoTimestamp() {
@@ -71,7 +71,7 @@ func SendToStderr(all ...bool) {
 
 // Value of f doesn't matter, just its presence.
 func getPrefix(f ...bool) string {
-	switch atomic.LoadInt32(&pfx) {
+	switch pfx.Load() {
 	case PrefixNone:
 		return ""
 	case PrefixText:
@@ -94,25 +94,25 @@ func getPrefix(f ...bool) string {
 }
 
 // Info prints `v` into standard output with info prefix.
-func Info(v ...interface{}) {
+func Info(v ...any) {
 	m := fmt.Sprintln(v...)
 	info.Printf("%v%s", green(getPrefix()), m)
 }
 
 // Infof is the formatted version of Info().
-func Infof(format string, v ...interface{}) {
+func Infof(format string, v ...any) {
 	m := fmt.Sprintf(format, v...)
 	info.Printf("%v%s", green(getPrefix()), m)
 }
 
 // Error prints `v` into standard output with fail prefix.
-func Error(v ...interface{}) {
+func Error(v ...any) {
 	m := fmt.Sprintln(v...)
 	fail.Printf("%v%s", red(getPrefix(true)), m)
 }
 
 // Errorf is the formatted version of Error().
-func Errorf(format string, v ...interface{}) {
+func Errorf(format string, v ...any) {
 	m := fmt.Sprintf(format, v...)
 	fail.Printf("%v%s", red(getPrefix(true)), m)
 }
