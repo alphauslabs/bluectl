@@ -6,7 +6,7 @@ import (
 
 	"github.com/alphauslabs/blue-sdk-go/session"
 	"github.com/alphauslabs/bluectl/params"
-	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/blue-sdk-go/pkg/logger"
 	"github.com/spf13/cobra"
 )
 

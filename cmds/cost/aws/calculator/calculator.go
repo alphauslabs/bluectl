@@ -2,7 +2,7 @@ package calculator
 
 import (
 	"github.com/alphauslabs/bluectl/cmds/cost/aws/calculator/costmods"
-	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/blue-sdk-go/pkg/logger"
 	"github.com/spf13/cobra"
 )
 

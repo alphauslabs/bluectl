@@ -11,7 +11,7 @@ import (
 	"github.com/alphauslabs/bluectl/cmds"
 	"github.com/alphauslabs/bluectl/cmds/cost"
 	"github.com/alphauslabs/bluectl/params"
-	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/blue-sdk-go/pkg/logger"
 	"github.com/fatih/color"
 	tomlv2 "github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"

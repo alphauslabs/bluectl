@@ -6,7 +6,7 @@ import (
 	"github.com/alphauslabs/bluectl/cmds/cost/aws/calculations"
 	"github.com/alphauslabs/bluectl/cmds/cost/aws/calculator"
 	"github.com/alphauslabs/bluectl/cmds/cost/aws/usage"
-	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/blue-sdk-go/pkg/logger"
 	"github.com/spf13/cobra"
 )
 

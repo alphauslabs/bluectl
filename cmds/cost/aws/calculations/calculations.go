@@ -19,7 +19,7 @@ import (
 	"github.com/alphauslabs/bluectl/cmds/cost/aws/calculations/schedule"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
-	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/blue-sdk-go/pkg/logger"
 	"github.com/alphauslabs/bluectl/pkg/ops"
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"

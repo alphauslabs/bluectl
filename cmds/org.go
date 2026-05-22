@@ -14,7 +14,7 @@ import (
 	"github.com/alphauslabs/blue-sdk-go/org/v1"
 	"github.com/alphauslabs/bluectl/params"
 	"github.com/alphauslabs/bluectl/pkg/grpcconn"
-	"github.com/alphauslabs/bluectl/pkg/logger"
+	"github.com/alphauslabs/blue-sdk-go/pkg/logger"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
